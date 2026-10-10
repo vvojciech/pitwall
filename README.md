@@ -14,6 +14,11 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
 - **Tab signals.** A tab turns amber when its agent waits for you, and it gets a "Needs you"
   badge. It turns green or red when the agent finishes or fails, until you look at it. Your
   profile's own tab colour and badge come back after that.
+- **Native tab status.** Pitwall writes iTerm2's own tab status: the dot, the status text and
+  a detail line with the last action, for example "Edit app.ts" or "Allow? Bash npm test".
+  It uses the same colours as iTerm2's Claude Code integration, and it works for Codex too.
+  Set **Settings > Appearance > General > Tab bar location** to **Left** to see it as a
+  vertical list.
 - **Allow and Deny without switching.** A card that needs permission shows the command and
   two buttons. Pitwall sends the keys only when the permission menu is on screen with the
   first option selected. In all other cases it tells you to open the tab.

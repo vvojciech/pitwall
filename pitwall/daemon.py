@@ -19,6 +19,7 @@ import iterm2
 from pitwall import config, iterm, snapshot
 from pitwall.http import reply, serve
 from pitwall.state import apply
+from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
 STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8"}
@@ -30,6 +31,7 @@ class Daemon:
     def __init__(self, app, token, port):
         self.app, self.token, self.port = app, token, port
         self.tabs = iterm.Tabs(app)
+        self.status = NativeStatus()
         self.sessions = self.load()
         self.unseen = set()
         self.focused = None
@@ -53,6 +55,7 @@ class Daemon:
             self.unseen.discard(s["sid"])
         self.save()
         asyncio.get_running_loop().create_task(self.tabs.show(s, self.unseen))
+        self.status.write(s)
 
     def on_focus(self, sid):
         self.focused = sid
@@ -171,6 +174,7 @@ async def main(connection):
     await pitwall_mission_control.async_register(connection)
     for s in daemon.sessions.values():
         await daemon.tabs.show(s, daemon.unseen)
+        daemon.status.write(s)
     print(f"pitwall: listening on 127.0.0.1:{port}", flush=True)
     async with iterm2.FocusMonitor(connection) as monitor:
         daemon.on_focus(focused_session(app, iterm2.FocusUpdate()))

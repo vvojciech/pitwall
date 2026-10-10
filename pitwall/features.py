@@ -12,7 +12,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, handoff, ports, snapshot, timeline, usage
+from pitwall import config, handoff, mapdata, ports, snapshot, timeline, usage
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
@@ -125,8 +125,11 @@ class Features:
         s = self.d.sessions.get(data.get("sid") or query.get("sid", ""))
         if path.startswith("/api/loop/"):
             return await self.loop_route(path, s, data)
-        if path in ("/api/timeline", "/api/handoff") and not s:
+        if path in ("/api/timeline", "/api/handoff", "/api/map") and not s:
             return reply(404, {"error": "That agent's tab is gone."})
+        if path == "/api/map":
+            mode = "files" if query.get("mode") == "files" else "overview"
+            return reply(200, await asyncio.to_thread(mapdata.map_for, s, mode))
         if path == "/api/timeline":
             return reply(200, {"items": await asyncio.to_thread(timeline.read, s, Path.home(), 60)})
         if path == "/api/handoff" and method == "GET":

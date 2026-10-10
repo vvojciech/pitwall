@@ -39,16 +39,28 @@ function limitsBlock(agent, l) {
   return `<div class="limits"><span class="agent ${agent}">${name}</span>${body}</div>`;
 }
 
-function usageSection() {
+// The compact strip pinned to the bottom of the panel: one row per agent, then today's totals.
+function miniMeter(label, w) {
+  if (!w || w.used == null) return `<span class="mm none"><em>${label}</em><b>–</b></span>`;
+  const used = Math.max(0, Math.min(100, Math.round(w.used)));
+  const level = used >= 90 ? "crit" : used >= 75 ? "warn" : "ok";
+  const reset = w.resets_at ? `, resets ${fmt.reset(w.resets_at)}` : "";
+  return `<span class="mm" title="${label === "5h" ? "5-hour window" : "Week"}: ${used}% used${reset}"><em>${label}</em>
+    <span class="meter"><span class="${level}" style="width:${Math.max(used, 2)}%"></span></span><b class="${level}">${used}%</b></span>`;
+}
+
+function usageBar() {
   const u = ui.usage;
   if (!u) return "";
+  const row = (agent, name) => {
+    const l = u.limits[agent];
+    return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>`;
+  };
   const t = u.today;
-  const today = t.active || t.prompts
-    ? `${fmt.duration(t.active)} agent time · ${fmt.count(t.prompts)} prompts · ${fmt.tokens(t.tokens)} tokens`
-    : "No agent activity yet today.";
-  return `<section class="group"><h2 class="split">Usage<button class="link" data-usage="open">Activity ›</button></h2>
-    <div class="usage-card">${limitsBlock("claude", u.limits.claude)}${limitsBlock("codex", u.limits.codex)}
-    <div class="today"><span>Today</span>${today}</div></div></section>`;
+  const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";
+  const detail = `Today: ${fmt.duration(t.active)} agent time, ${fmt.count(t.prompts)} prompts, ${fmt.tokens(t.tokens)} tokens, ${fmt.count(t.commands)} commands`;
+  return `${row("claude", "Claude")}${row("codex", "Codex")}
+    <div class="urow today-row" title="${detail}"><span>Today</span><span class="tval">${today}</span><button class="link" data-usage="open">Activity ›</button></div>`;
 }
 
 async function pollUsage() {

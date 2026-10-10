@@ -293,3 +293,22 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 .head .rename svg { width: 11px; height: 11px; }
 .card:hover .head .rename, .head .rename:focus-visible { opacity: 1; }
 .rename-input { flex: 1; min-width: 0; height: 22px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--faint); background: var(--bg); color: var(--ink); font: 600 12.5px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+
+/* Usage strip, pinned to the bottom of the panel */
+.usage-bar { position: sticky; bottom: 0; z-index: 2; background: var(--bg); border-top: 1px solid var(--line); padding: 7px 12px 8px; display: grid; gap: 4px; font-size: 11px; }
+.usage-bar:empty { display: none; }
+body.mission .usage-bar { display: none; }
+.urow { display: grid; grid-template-columns: 52px 1fr 1fr; align-items: center; gap: 10px; min-width: 0; }
+.urow .agent { color: var(--ink); font-size: 11px; }
+.mm { display: grid; grid-template-columns: 16px 1fr 30px; align-items: center; gap: 5px; min-width: 0; }
+.mm em { font-style: normal; color: var(--faint); font-size: 10px; }
+.mm .meter { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.mm .meter span { display: block; height: 100%; border-radius: 2px; background: var(--muted); }
+.mm .meter span.warn { background: var(--amber); } .mm .meter span.crit { background: var(--red); }
+.mm b { font: 600 10.5px var(--mono); text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mm b.warn { color: var(--amber); } .mm b.crit { color: var(--red); }
+.mm.none b { color: var(--faint); font-weight: 400; }
+.today-row { grid-template-columns: auto 1fr auto; gap: 8px; padding-top: 3px; border-top: 1px dashed var(--line); margin-top: 1px; color: var(--muted); }
+.today-row > span:first-child { color: var(--faint); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.today-row .tval { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mm .meter { grid-area: auto; display: block; }

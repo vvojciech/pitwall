@@ -138,7 +138,11 @@ function render() {
   } else {
     html = list.map(card).join("");
   }
-  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + usageSection() + portsSection();
+  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
+  if (!MISSION) {
+    const bar = usageBar();
+    if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
+  }
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
@@ -205,7 +209,6 @@ $("cards").addEventListener("click", (e) => {
   if (fail) return failureAct(fail);
   const port = e.target.closest("[data-port]");
   if (port) return portAct(port);
-  if (e.target.closest("[data-usage]")) return api("/api/open", { view: "activity" }).catch((err) => toast(err.message));
   const raceButton = e.target.closest("[data-race]");
   if (raceButton) return raceAct(raceButton);
   const el = e.target.closest("[data-sid]");
@@ -231,6 +234,9 @@ $("cards").addEventListener("change", (e) => {
   if (ui.raceForm && "raceRepo" in e.target.dataset) ui.raceForm.repo = e.target.value;
 });
 $("race").addEventListener("click", toggleRaceForm);
+$("usage").addEventListener("click", (e) => {
+  if (e.target.closest("[data-usage]")) api("/api/open", { view: "activity" }).catch((err) => toast(err.message));
+});
 
 // Rename: double-click the name or use the pencil. Enter or leaving the field saves, Escape cancels.
 function startRename(sid) {

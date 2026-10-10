@@ -1,0 +1,10 @@
+#!/bin/bash
+# Claude Code status line wrapper. It saves the status line input (with the plan limits) for
+# Pitwall, then runs your own status line command with the same input. Install puts it in place.
+input=$(cat)
+dir="${PITWALL_HOME:-$HOME/.pitwall}"
+umask 077
+printf '%s' "$input" > "$dir/claude-status.json.tmp" 2>/dev/null && mv -f "$dir/claude-status.json.tmp" "$dir/claude-status.json"
+original=$(cat "$dir/statusline-command" 2>/dev/null)
+[ -n "$original" ] && printf '%s' "$input" | bash -c "$original"
+exit 0

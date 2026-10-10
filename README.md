@@ -58,6 +58,14 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
   others), Pitwall runs it in its own tab, so it keeps running after the turn. Claude gets
   the path of the log file. Turn it off with `PITWALL_DEV_TABS=0`.
 - **Ports.** The panel lists the ports that your projects listen on, with Open and Stop.
+- **Usage and activity.** The panel shows the 5-hour and weekly limits of your Claude and Codex
+  plans, and today's agent time, prompts and tokens. "Activity" opens a page with the last 7, 14
+  or 30 days: totals, agent time per day for each agent, and a table per project. Agent time adds
+  up all agents, so two agents working for an hour count as two hours. The data comes from the
+  transcripts the agents already keep. Codex writes its limits there. Claude Code gives its
+  limits only to the status line, so `pitwall install` puts a small wrapper around your status
+  line command: it saves the input for Pitwall, then runs your command unchanged.
+  `pitwall uninstall` puts your command back.
 - **Setup and doctor.** `pitwall install` adds the hooks, with a backup of each file it
   changes, and starts the daemon. `pitwall doctor` checks each part and tells you the fix.
 

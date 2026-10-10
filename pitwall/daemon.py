@@ -24,7 +24,9 @@ from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
 STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8",
-          "/features.js": "text/javascript; charset=utf-8", "/races.js": "text/javascript; charset=utf-8"}
+          "/features.js": "text/javascript; charset=utf-8", "/races.js": "text/javascript; charset=utf-8",
+          "/usage.js": "text/javascript; charset=utf-8", "/activity.js": "text/javascript; charset=utf-8"}
+PAGES = {"/": "index.html", "/activity": "activity.html"}
 ORDER = {"waiting_permission": 0, "waiting_input": 1, "failed": 2, "working": 3, "done": 4, "idle": 5}
 BUSY = ("working", "waiting_permission")
 SCAN_SECONDS = 5
@@ -40,6 +42,8 @@ class Daemon:
         self.focused = None
 
     def url(self, view="sidebar"):
+        if view == "activity":
+            return f"http://127.0.0.1:{self.port}/activity?t={self.token}"
         return f"http://127.0.0.1:{self.port}/?view={view}&t={self.token}"
 
     def load(self):
@@ -71,10 +75,10 @@ class Daemon:
     async def handle(self, method, path, query, headers, body):
         if method == "GET" and path in STATIC:
             return reply(200, (WEB / path[1:]).read_bytes(), STATIC[path])
-        if path == "/" and method == "GET":
+        if path in PAGES and method == "GET":
             if not hmac.compare_digest(query.get("t", ""), self.token):
                 return reply(403, {"error": "bad token"})
-            return reply(200, (WEB / "index.html").read_bytes(), "text/html; charset=utf-8")
+            return reply(200, (WEB / PAGES[path]).read_bytes(), "text/html; charset=utf-8")
         if not hmac.compare_digest(headers.get("x-pitwall-token", ""), self.token):
             return reply(403, {"error": "bad token"})
         data = json.loads(body) if body else {}
@@ -92,8 +96,8 @@ class Daemon:
             return routed
         if path == "/api/state":
             return reply(200, await self.state(query.get("screen") == "1"))
-        if path == "/api/mission" and method == "POST":
-            subprocess.Popen(["open", self.url("mission")])
+        if path in ("/api/mission", "/api/open") and method == "POST":
+            subprocess.Popen(["open", self.url("activity" if data.get("view") == "activity" else "mission")])
             return reply(200, {"ok": True})
         s = self.sessions.get(data.get("sid") or query.get("sid", ""))
         session = s and self.app.get_session_by_id(s["sid"])

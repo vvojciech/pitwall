@@ -8,26 +8,29 @@
 - Agent discovery, and protection against agents nested in another agent's tab.
 - Shared memory between Claude Code and Codex.
 - Timeline, Hand off, failed commands, dev server tabs and ports.
+- Busy port help, review loops, agent races, activity and plan usage.
 
 ## Verify next
 
-1. **Allow and Deny on a real prompt.** Only the refusal path is tested on a live agent.
-2. **Failed commands.** Install iTerm2 shell integration, make a command fail in a shell tab,
-   and check the panel. The section is tested only with sample data.
-3. **Hand off and Fix with.** Send one to Codex and one to Claude, and check that the new
-   split starts the agent with the message.
+1. **Allow and Deny on a real prompt.** Claude draws its menu with NUL cells, which hid it from
+   Pitwall until 2026-10-10. The fix is tested on a race's trust menu, not on a permission menu.
+2. **Send to Claude and Fix with.** Detection of failed commands is tested live; typing the
+   failure into an agent is not.
+3. **Hand off and review loops.** Run one of each with real agents. The loop is tested with fakes.
 4. **Dev server tabs.** Ask Claude to start a dev server, and check that it gets its own tab and
    that Claude reads the log.
-5. **Codex.** Approve the hooks in Codex once, then check its card, tab status and timeline.
+5. **Codex.** Approve Pitwall's hooks in Codex once (Codex asks at its next start), then check its
+   card, tab status and timeline.
+6. **Activity tooltip.** Its content is tested; its look is not, because the render tool cannot
+   capture it.
 
 ## Next features
 
 | Rank | Feature | Size | Notes |
 |---|---|---|---|
-| 1 | Review loops | M | Hand off in Review mode after each turn, and send the findings back until APPROVED. |
-| 2 | Agent races | M | One task, several agents, each in its own worktree; compare the diffs and keep one. |
-| 3 | Activity and plan usage | M | Time, prompts and tokens per project. Check `ccusage` first. |
-| 4 | Busy port help | E | When a command fails with EADDRINUSE, name the process that holds the port. |
+| 1 | Isolated sessions | M | A sandboxed Claude or Codex in a throwaway Docker container with only the project mounted. |
+| 2 | Project memory window | E | Read and edit CLAUDE.md, AGENTS.md and the Claude notes for a project in one place. |
+| 3 | Background processes | M | Find stale dev servers, VMs and agents across the machine, and close them. |
 
 ## Not planned
 

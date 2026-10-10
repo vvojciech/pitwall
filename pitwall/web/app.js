@@ -124,7 +124,7 @@ function render() {
   } else {
     html = list.map(card).join("");
   }
-  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
+  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + usageSection() + portsSection();
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
@@ -190,6 +190,7 @@ $("cards").addEventListener("click", (e) => {
   if (fail) return failureAct(fail);
   const port = e.target.closest("[data-port]");
   if (port) return portAct(port);
+  if (e.target.closest("[data-usage]")) return api("/api/open", { view: "activity" }).catch((err) => toast(err.message));
   const raceButton = e.target.closest("[data-race]");
   if (raceButton) return raceAct(raceButton);
   const el = e.target.closest("[data-sid]");
@@ -222,7 +223,8 @@ poll();
 setInterval(() => { if (!document.hidden) poll(); }, MISSION ? 1500 : 1000);
 setInterval(tick, 1000);
 if (!MISSION) {
-  Promise.all([pollPorts(), pollRaces()]).then(render);
+  Promise.all([pollPorts(), pollRaces(), pollUsage()]).then(render);
+  setInterval(() => { if (!document.hidden) pollUsage(); }, 60000);
   setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
   setInterval(() => { if (!document.hidden) pollRaces(); }, 3000);
   setInterval(() => { if (!document.hidden) pollTimelines(); }, 2000);

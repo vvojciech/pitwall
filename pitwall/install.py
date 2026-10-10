@@ -51,6 +51,30 @@ def edit_hooks(path, agent, events, add):
     return True
 
 
+def wrap_statusline(path, home, add):
+    """Put Pitwall's wrapper around the Claude Code status line, or take it off again.
+
+    The wrapper saves the status line input, which holds the plan limits, then runs the original.
+    """
+    data = json.loads(path.read_text()) if path.exists() else {}
+    line = data.get("statusLine") or {}
+    saved = home / "statusline-command"
+    wrapped = "pitwall-statusline" in line.get("command", "")
+    if add == wrapped:
+        return
+    if path.exists():
+        shutil.copyfile(path, path.with_name(f"{path.name}.pitwall-backup-{int(time.time())}"))
+    if add:
+        home.mkdir(parents=True, exist_ok=True)
+        saved.write_text(line.get("command", ""))
+        data["statusLine"] = dict(line or {"type": "command"}, command=f'bash "{config.REPO}/bin/pitwall-statusline"')
+    elif saved.exists() and saved.read_text().strip():
+        data["statusLine"] = dict(line, command=saved.read_text())
+    else:
+        data.pop("statusLine", None)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
 def launch_agent(load):
     domain = f"gui/{os.getuid()}"
     subprocess.run(["launchctl", "bootout", f"{domain}/{LABEL}"], capture_output=True)
@@ -84,6 +108,7 @@ def install():
     subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--upgrade", "iterm2"], check=True)
     print("Adding hooks to", CLAUDE, "(backup kept next to it)")
     edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=True)
+    wrap_statusline(CLAUDE, config.HOME, add=True)
     if edit_hooks(CODEX, "codex", CODEX_EVENTS, add=True):
         print("Adding hooks to", CODEX, "(Codex asks you to trust them on its next start)")
     print("Starting the daemon")
@@ -99,6 +124,7 @@ def install():
 def uninstall():
     launch_agent(load=False)
     edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=False)
+    wrap_statusline(CLAUDE, config.HOME, add=False)
     edit_hooks(CODEX, "codex", CODEX_EVENTS, add=False)
     config.DAEMON_FILE.unlink(missing_ok=True)
     print("Removed the hooks and the LaunchAgent. Delete", config.HOME, "to remove the venv and state.")
@@ -138,6 +164,8 @@ def doctor():
         ("LaunchAgent is loaded", subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
                                                  capture_output=True).returncode == 0, "Run: pitwall install"),
         ("Daemon answers", daemon_answers(), f"Start iTerm2, then read {config.LOG_FILE}"),
+        ("Claude Code status line feeds the plan limits", "pitwall-statusline" in CLAUDE.read_text(),
+         "Run: pitwall install"),
         (f"Claude Code hooks ({len(CLAUDE_EVENTS)} events)", count_hooks(CLAUDE) == len(CLAUDE_EVENTS),
          "Run: pitwall install"),
     ]

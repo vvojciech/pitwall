@@ -12,7 +12,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, handoff, ports, snapshot, timeline
+from pitwall import config, handoff, ports, snapshot, timeline, usage
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
@@ -104,6 +104,9 @@ class Features:
         """Handle a feature route. Returns None when the path is not one of these."""
         if path.startswith("/api/race"):
             return await self.races.route(method, path, query, data)
+        if path == "/api/activity":
+            days = min(max(int(query.get("days") or 7), 1), 30)
+            return reply(200, await asyncio.to_thread(usage.report, Path.home(), days))
         if path == "/api/ports":
             return reply(200, {"ports": await asyncio.to_thread(ports.scan, str(Path.home()))})
         if path == "/api/ports/stop":

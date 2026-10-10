@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitwall Activity</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body class="activity-page">
+<header class="bar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4h9a5 5 0 0 1 0 10H4" /><path d="M14 20h6" /></svg>
+    <span>Pitwall</span><span class="view">Activity</span>
+  </div>
+  <div class="summary"></div>
+  <div class="seg range" role="group" aria-label="Range">
+    <button data-days="7" class="on">7 days</button><button data-days="14">14 days</button><button data-days="30">30 days</button>
+  </div>
+</header>
+<main class="activity" id="page"><p class="loading">Reading the transcripts…</p></main>
+<div class="tip" id="tip" role="tooltip"></div>
+<script src="/usage.js"></script>
+<script src="/activity.js"></script>
+</body>
+</html>

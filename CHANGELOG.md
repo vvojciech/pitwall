@@ -5,6 +5,8 @@
 - Codex checked end to end: card, task, last action, context ring, Allow, Deny and timeline.
 - Fixed: the timeline showed Codex commands as JavaScript (`tools.exec_command({cmd:...})`). It
   now shows `Bash <command>`, as the card does.
+- Fixed: `pitwall install` and `pitwall update` could fail with "Bootstrap failed: 5" when the
+  service was already running, and leave it stopped. Pitwall now waits for launchd.
 - Fixed: Codex warned "clamping Interrupt hook timeout to 3s". Pitwall's Codex Interrupt hook now
   asks for 3 seconds. Codex asks you to trust this one hook again.
 

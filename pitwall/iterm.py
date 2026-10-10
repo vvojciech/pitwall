@@ -1,10 +1,12 @@
 """Everything Pitwall does to iTerm2: tab colours, badges, screen reads and keystrokes."""
 from __future__ import annotations
 
+import asyncio
 import re
 
 import iterm2
 
+from pitwall import questions
 from pitwall.colours import BADGES, TAB, is_our_badge, is_our_colour
 
 # The first option of a Claude Code or Codex permission menu, with the cursor on it.
@@ -96,6 +98,22 @@ async def answer(session, allow):
     if not PROMPT_READY.search(await screen_text(session, 40)):
         return "The permission prompt is not on screen, or another option is selected. Open the tab to answer."
     await session.async_send_text("\r" if allow else "\x1b")
+    return None
+
+
+async def answer_questions(session, asked, picks):
+    """Answer an AskUserQuestion menu. Returns an error message, or None when the answers went in."""
+    if not questions.menu_ready(await screen_text(session, 40), asked):
+        return "The question menu is not on screen, or it is part answered. Open the tab to answer."
+    for key in questions.keys(asked, picks):
+        await session.async_send_text(key)
+        await asyncio.sleep(0.15)  # the menu redraws after each key
+    if not questions.needs_submit(asked):
+        return None
+    await asyncio.sleep(0.3)
+    if not questions.review_ready(await screen_text(session, 40)):
+        return "The answers went in, but the Submit page did not show. Open the tab to finish."
+    await session.async_send_text("\r")
     return None
 
 

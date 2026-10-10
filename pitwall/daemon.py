@@ -16,7 +16,8 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, context, iterm, snapshot
+from pitwall import config, context, iterm, questions, snapshot
+from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
 from pitwall.state import apply, discover, layout_order
@@ -46,9 +47,13 @@ class Daemon:
 
     def load(self):
         try:
-            return json.loads(config.STATE_FILE.read_text())
+            sessions = json.loads(config.STATE_FILE.read_text())
         except (OSError, ValueError):
             return {}
+        for s in sessions.values():  # state saved before a filter existed can hold a system record
+            if s.get("task") and not prompt_text(s["task"]):
+                s["task"] = None
+        return sessions
 
     def save(self):
         config.write_private(config.STATE_FILE, json.dumps(self.sessions))
@@ -114,6 +119,17 @@ class Daemon:
             if error:
                 return reply(409, {"error": error})
             s.update(state="working" if data.get("allow") else "waiting_input", permission=None)
+            self.changed(s)
+            return reply(200, {"ok": True})
+        if path == "/api/answer":
+            asked = s.get("questions")
+            if not asked or s["state"] != "waiting_input":
+                return reply(409, {"error": "The agent is not asking a question."})
+            error = questions.problem(asked, data.get("picks")) or await iterm.answer_questions(
+                session, asked, data["picks"])
+            if error:
+                return reply(409, {"error": error})
+            s.update(state="working", questions=None)
             self.changed(s)
             return reply(200, {"ok": True})
         if path.startswith("/api/undo") or path == "/api/redo":

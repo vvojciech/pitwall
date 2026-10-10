@@ -74,5 +74,20 @@ async def answer(session, allow):
 
 
 async def focus(app, session):
-    await session.async_activate(select_tab=True, order_window_front=True)
+    """Show the session and give it keyboard focus, away from the Pitwall panel.
+
+    iTerm2 moves keyboard focus only when the active pane or the selected tab changes
+    (PTYTab setActiveSession, PseudoTerminal didSelectTabViewItem). To focus the pane that is
+    already active, select a sibling first, then the target.
+    """
     await app.async_activate(raise_all_windows=False, ignoring_other_apps=True)
+    tab, window = session.tab, session.window
+    if tab and window and window.current_tab is tab and tab.current_session is session:
+        sibling = next((s for s in tab.sessions if s is not session), None)
+        other_tab = next((t for t in window.tabs if t is not tab), None)
+        if sibling:
+            await sibling.async_activate(select_tab=True, order_window_front=True)
+        elif other_tab:
+            await other_tab.async_activate(order_window_front=True)
+        # ponytail: a window with one tab and one pane keeps the focus where it is
+    await session.async_activate(select_tab=True, order_window_front=True)

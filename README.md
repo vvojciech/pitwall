@@ -1,66 +1,93 @@
-# Pitwall
+<h1 align="center">Pitwall</h1>
 
-[![test](https://github.com/vvojciech/pitwall/actions/workflows/test.yml/badge.svg)](https://github.com/vvojciech/pitwall/actions/workflows/test.yml)
+<p align="center"><b>A pit wall for your coding agents, inside iTerm2.</b><br>
+See every Claude Code and Codex session at once. Answer them without switching tabs.</p>
 
-Watch and steer Claude Code and Codex from iTerm2. Pitwall adds a panel to the iTerm2 window
-that follows every agent in every tab: what it does, what it needs from you, what it changed,
-and how much of your plan it used.
+<p align="center">
+<a href="https://github.com/vvojciech/pitwall/actions/workflows/test.yml"><img src="https://github.com/vvojciech/pitwall/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+<a href="https://github.com/vvojciech/pitwall/releases/latest"><img src="https://img.shields.io/github/v/release/vvojciech/pitwall?color=e8a33d" alt="latest release"></a>
+<img src="https://img.shields.io/badge/macOS-iTerm2%203.6%2B-555" alt="macOS and iTerm2 3.6 or newer">
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-555" alt="MIT license"></a>
+</p>
 
-<p align="center"><img src="docs/images/panel.png" width="320" alt="The Pitwall panel: an agent that waits for permission with Allow and Deny, a Codex agent at work, a finished agent with background work and a review loop, the code map of the active tab's turn, ports, and plan usage"></p>
+<p align="center"><img src="docs/images/hero.png" alt="iTerm2 with Claude Code asking to run a migration on the left, and the Pitwall panel on the right: the same request with Allow and Deny, and a second agent asking which screens get dark mode first"></p>
 
-Pitwall is not a fork of iTerm2. It is a small local service that talks to iTerm2 through the
-iTerm2 Python API, and to the agents through the hooks that Claude Code and Codex already have.
+```sh
+curl -fsSL https://raw.githubusercontent.com/vvojciech/pitwall/main/install.sh | bash
+```
 
-## What it does
+<p align="center">Free and open source. Runs on your Mac only: no account, no server, no telemetry.</p>
 
-**See every agent**
+## Why
 
-- **Agent panel.** One card per agent, in the order of your iTerm2 windows, tabs and panes, or
-  with the agents that need you first (the Tabs and Activity switch at the top):
-  project, state (working, needs permission, waiting for you, done, failed), task, last action
-  and a timer. Click a card to go to that pane. Double-click its name to rename it; the tab
-  takes the same name. Plan usage stays pinned to the bottom of the panel.
-- **Context ring.** A ring on each card shows how full the agent's context window is. It turns
-  amber from 80% and red from 90%; hover for the numbers. Claude's
-  figures come from the status line wrapper, and Codex's from its transcript.
-- **Background work.** When a Claude Code turn ends with work still running (a background shell,
-  a sub-agent, a monitor or a scheduled wake-up), the card lists it, and the header counts it.
-- **Tab signals.** A tab turns dark amber when its agent waits for you, and dark green or dark red when it
-  finishes or fails, until you look at it.
-- **Code map.** A map of the work of the agent in your active tab, not of the whole project: the
-  files it read and edited, the file it works on now, and the files that import an edit (with a
-  warning when no test imports it). "This turn" counts what changed since the last prompt, also
-  through shell commands; "Uncommitted" shows everything that differs from the last commit. It
-  switches when you change tabs.
-- **Timeline.** The agent's prompts, thinking, replies, tool calls and sub-agents.
+Three agents in three tabs is a lot to keep track of. One sits on a permission prompt for twenty
+minutes because you were in another tab. One finished a while ago and you missed it. One changed
+files you have not looked at yet.
 
-**Steer them**
+Pitwall puts all of them in one panel next to your terminal, and tells you which one needs you.
 
-- **Allow and Deny** a permission prompt from the panel, without switching tabs.
-- **Answer Claude's questions** from the card. A single-choice question takes one click. For
-  several questions, or a question with more than one answer, pick the options and click **Send**.
-  To type your own answer, open the tab.
-- **Hand off** a task, its diff and its failed commands to another Claude or Codex.
-- **Review loops.** A second agent reviews the first one's changes, round after round, until it
-  answers APPROVED.
-- **Agent races.** One task, several agents, each in its own git worktree. Compare the diffs and
-  apply the one you want.
+<table>
+<tr>
+<td width="46%"><img src="docs/images/steer.gif" alt="An agent asks to run a migration and gets Allow from the panel. A second agent asks two questions, the options are picked on its card and sent. The first agent finishes."></td>
+<td>
+
+### Steer from one place
+
+**Allow or Deny** a permission prompt from the card. The agent keeps going in its own tab.
+
+**Answer Claude's questions** on the card. One click for a single choice. Pick several and press
+Send for the rest.
+
+**Undo a turn.** Pitwall takes a snapshot before every prompt. If a turn goes wrong, see the
+files it touched and put them back. Changed your mind? Redo.
+
+**Hand off** a task with its diff and failed commands to a fresh Claude or Codex.
+
+**Review loops.** A second agent reviews the first one's work, round after round, until it
+says APPROVED.
+
+**Agent races.** Give one task to several agents, each in its own git worktree, and keep the
+best diff.
+
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<td>
+
+### See what each agent is doing
+
+**One card per agent**, in tab order or with the ones that need you first. State, task, last
+action and a timer. Click a card to jump to that pane.
+
+**Tab colours.** A tab turns dark amber when its agent waits for you, dark green when it
+finishes and dark red when it fails.
+
+**Context ring.** How full each agent's context window is, amber from 80%, red from 90%.
+
+**Background work.** Shells, sub-agents and monitors that still run after a turn ends.
+
+**Code map** of the active tab's work: files read, files edited, the file it is on now, and the
+files that import an edit, with a warning when no test covers it.
+
+**Plan limits** for Claude and ChatGPT, pinned to the bottom, and an activity page with time,
+prompts and tokens per day and per project.
+
+</td>
+<td width="42%"><img src="docs/images/map.png" alt="The code map: the edited files cart.ts, CartSummary.tsx and route.ts, the files that import them, and a warning that two edits have no test that imports them"></td>
+</tr>
+</table>
+
+### And the small things
+
+- **Failed commands.** A command fails in a shell tab: send it to the agent in that project in
+  one click.
+- **Busy ports.** `EADDRINUSE`? The panel names the process on the port and can stop it.
 - **Shared memory.** Codex starts with Claude Code's notes for the project, and Claude Code
-  starts with Codex's memories.
-
-**Undo and recover**
-
-- **Undo a turn.** Before each prompt, Pitwall saves a snapshot of the work tree. Undo lists the
-  files it will change, then puts them back. Redo brings the changes back.
-- **Failed commands.** When a command fails in a shell tab, send it to the agent in that
-  project, or start one to fix it.
-- **Busy ports.** When a port is taken, the panel names the process that holds it, with a
-  button to stop it.
-
-**Know your usage**
-
-- **Plan limits.** The 5-hour and weekly limits of your Claude and ChatGPT plans.
-- **Activity.** Agent time, prompts, files, commands and tokens per day and per project.
+  starts with Codex's.
+- **Rename agents.** Double-click a name. The tab takes the same name.
 
 <p align="center"><img src="docs/images/activity.png" alt="The activity page: totals, agent time per day for Claude and Codex, plan limits and projects"></p>
 
@@ -116,6 +143,9 @@ starts your agents.
 
 ## How it works
 
+<details>
+<summary>Hooks, a local service and a web panel</summary>
+
 1. Claude Code and Codex run `pitwall hook <agent> <event>` on each hook event. The hook reads
    `ITERM_SESSION_ID` to know its pane, sends the event to the service and exits. It never
    blocks or fails the agent, and it prints nothing but the shared memory at session start.
@@ -123,6 +153,8 @@ starts your agents.
    through its Python API: tab colours, keyboard focus, screen reads and keystrokes.
 3. The panel is a web page that iTerm2 shows in its toolbelt. It asks the service for the
    state every second.
+
+</details>
 
 ## Security and privacy
 
@@ -141,6 +173,9 @@ Found a security problem? Open a private security advisory on GitHub.
 
 ## Troubleshooting
 
+<details>
+<summary>Common problems and fixes</summary>
+
 | Problem | Fix |
 |---|---|
 | The panel says "Pitwall is not running" | Run `pitwall doctor`. Read `~/.pitwall/daemon.log`. |
@@ -152,6 +187,8 @@ Found a security problem? Open a private security advisory on GitHub.
 | A Codex card never shows | Approve Pitwall's hooks the next time Codex starts. |
 | The panel is on the right | iTerm2 always docks the toolbelt on the right. Set **Settings > Appearance > General > Tab bar location** to **Left** for a vertical tab list with status dots. |
 
+</details>
+
 ## Limits
 
 - macOS and iTerm2 only.
@@ -161,6 +198,9 @@ Found a security problem? Open a private security advisory on GitHub.
 - The activity page opens in your browser.
 
 ## Development
+
+<details>
+<summary>Tests, the demo server and a second service</summary>
 
 ```sh
 python3 -m unittest              # no network, no iTerm2 needed
@@ -176,6 +216,8 @@ PITWALL_HOME=/tmp/pw PITWALL_NO_TOOLBELT=1 PYTHONPATH=. ~/.pitwall/venv/bin/pyth
 The code is plain Python 3.9 and plain JavaScript, with no build step and one dependency (the
 `iterm2` package, in the service's venv only). See [CHANGELOG.md](CHANGELOG.md) and
 [ROADMAP.md](ROADMAP.md).
+
+</details>
 
 ## License
 

@@ -126,7 +126,7 @@ def install():
     config.HOME.mkdir(mode=0o700, parents=True, exist_ok=True)
     print("Creating the daemon venv in", config.VENV)
     subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
-    subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--upgrade", "iterm2"], check=True)
+    subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--disable-pip-version-check", "--upgrade", "iterm2"], check=True)
     if not CLAUDE.parent.exists() and not CODEX.parent.exists():
         print("No Claude Code (~/.claude) and no Codex (~/.codex) found. Install one, then run: pitwall install")
     if CLAUDE.parent.exists():

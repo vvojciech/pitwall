@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: `pitwall install` printed a pip upgrade warning on the stock macOS Python. (#1)
+
 ## 0.5.1 (2026-10-10)
 
 - Codex checked end to end: card, task, last action, context ring, Allow, Deny and timeline.

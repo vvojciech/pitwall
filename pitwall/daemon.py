@@ -17,6 +17,7 @@ from pathlib import Path
 import iterm2
 
 from pitwall import config, iterm, snapshot
+from pitwall.features import Features
 from pitwall.http import reply, serve
 from pitwall.state import apply, discover
 from pitwall.status import NativeStatus
@@ -83,6 +84,9 @@ class Daemon:
             else:
                 self.save()
             return reply(200, {"ok": True})
+        routed = await self.features.route(method, path, query, data)
+        if routed:
+            return routed
         if path == "/api/state":
             return reply(200, await self.state(query.get("screen") == "1"))
         if path == "/api/mission" and method == "POST":
@@ -144,7 +148,7 @@ class Daemon:
                 card["screen"] = await iterm.screen_text(session, 14)
             cards.append(card)
         cards.sort(key=lambda c: (ORDER.get(c["state"], 9), -c["updated"]))
-        return {"now": time.time(), "sessions": cards}
+        return {"now": time.time(), "sessions": cards, "failures": self.features.failure_cards()}
 
     async def scan(self):
         """Add agents that fired no hook yet, and remove agents that quit without a SessionEnd."""
@@ -191,6 +195,8 @@ async def main(connection):
     daemon = None
     server, port = await serve(lambda *a: daemon.handle(*a))
     daemon = Daemon(app, token, port)
+    daemon.features = Features(daemon, connection)
+    await daemon.features.watch_commands()
     config.write_private(config.DAEMON_FILE, json.dumps({"port": port, "token": token, "pid": os.getpid()}))
     await iterm2.tool.async_register_web_view_tool(connection, "Pitwall", "com.vvojciech.pitwall", False, daemon.url())
 

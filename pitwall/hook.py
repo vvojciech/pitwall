@@ -14,6 +14,7 @@ import urllib.request
 from pitwall import config, snapshot
 from pathlib import Path
 
+from pitwall.devserver import is_dev_server
 from pitwall.events import to_event
 from pitwall.memory import context_for
 from pitwall.state import agent_of
@@ -62,6 +63,18 @@ def share_memory(agent, payload):
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
 
 
+def move_dev_server(daemon, event, payload):
+    """Start a dev server in its own tab, and tell Claude where its output goes instead."""
+    command = (payload.get("tool_input") or {}).get("command", "")
+    if payload.get("tool_name") != "Bash" or os.environ.get("PITWALL_DEV_TABS") == "0" or not is_dev_server(command):
+        return
+    log = post(daemon, "/api/devserver", {"sid": event["sid"], "cwd": event["cwd"], "command": command}, timeout=5)["log"]
+    reason = (f"Pitwall started this dev server in its own iTerm2 tab, so it keeps running after your turn. "
+              f"Do not start it again. Read its output and URL with: tail -n 40 {log}")
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                             "permissionDecisionReason": reason}}))
+
+
 def run(agent, name):
     try:
         raw = sys.stdin.read()
@@ -76,5 +89,7 @@ def run(agent, name):
         if name == "UserPromptSubmit" and event.get("cwd"):
             event["snapshot"] = snapshot.take(event["cwd"])
         post(daemon, "/api/event", event)
+        if agent == "claude" and name == "PreToolUse":
+            move_dev_server(daemon, event, payload)
     except Exception:  # noqa: BLE001  a status hook must not fail the agent
         pass

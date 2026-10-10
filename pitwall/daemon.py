@@ -222,6 +222,7 @@ async def main(connection):
     for s in daemon.sessions.values():
         await daemon.tabs.show(s, daemon.unseen)
         daemon.status.write(s)
+    await iterm.clear_stale(app, set(daemon.sessions))
     asyncio.get_running_loop().create_task(daemon.scan_forever())
     print(f"pitwall: listening on 127.0.0.1:{port}", flush=True)
     async with iterm2.FocusMonitor(connection) as monitor:

@@ -35,7 +35,9 @@ class Tabs:
         if session is None:
             return
         want = (signal_for(s, unseen), BADGES.get(s["state"]))
-        if self.applied.get(s["sid"], (None, None)) == want:
+        # Nothing is known about a tab until the first pass: it can carry a colour from before a
+        # restart, so the first pass always writes, even when no signal is wanted.
+        if self.applied.get(s["sid"]) == want:
             return
         if s["sid"] not in self.original:
             p = await session.async_get_profile()
@@ -59,6 +61,25 @@ class Tabs:
         change.set_badge_text(want[1] or badge)
         await session.async_set_profile_properties(change)
         self.applied[s["sid"]] = want
+
+
+async def clear_stale(app, known):
+    """Remove Pitwall's colour and badge from tabs that have no agent card any more."""
+    for window in app.terminal_windows:
+        for tab in window.tabs:
+            for session in tab.sessions:
+                if session.session_id in known:
+                    continue
+                p = await session.async_get_profile()
+                colour = p.tab_color
+                ours = p.use_tab_color and colour is not None and is_our_colour((colour.red, colour.green, colour.blue))
+                if ours or is_our_badge(p.badge_text or ""):
+                    change = iterm2.LocalWriteOnlyProfile()
+                    if ours:
+                        change.set_use_tab_color(False)
+                    if is_our_badge(p.badge_text or ""):
+                        change.set_badge_text("")
+                    await session.async_set_profile_properties(change)
 
 
 async def screen_text(session, last=None):

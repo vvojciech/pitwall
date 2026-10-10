@@ -1,0 +1,146 @@
+"""Install, remove and check Pitwall: agent hooks, the daemon venv and its LaunchAgent."""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+from pitwall import config
+
+LABEL = "com.vvojciech.pitwall"
+PLIST = Path.home() / "Library/LaunchAgents" / f"{LABEL}.plist"
+CLAUDE = Path.home() / ".claude/settings.json"
+CODEX = Path.home() / ".codex/hooks.json"
+CLAUDE_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure",
+                 "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd")
+CODEX_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "PostToolUse",
+                "Stop", "Interrupt")
+MARK = "/bin/pitwall\" hook "
+
+
+def hook_command(agent, event):
+    return f'python3 "{config.REPO}/bin/pitwall" hook {agent} {event}'
+
+
+def is_ours(entry):
+    return any(MARK in h.get("command", "") for h in entry.get("hooks", []))
+
+
+def edit_hooks(path, agent, events, add):
+    """Add or remove Pitwall's hooks in one agent's settings file. Keeps a backup."""
+    if not path.parent.exists():
+        return False
+    data = json.loads(path.read_text()) if path.exists() else {}
+    if path.exists():
+        shutil.copyfile(path, path.with_name(f"{path.name}.pitwall-backup-{int(time.time())}"))
+    hooks = data.setdefault("hooks", {})
+    for event in set(hooks) | set(events):
+        entries = [e for e in hooks.get(event, []) if not is_ours(e)]
+        if add and event in events:
+            entries.append({"hooks": [{"type": "command", "command": hook_command(agent, event), "timeout": 10}]})
+        if entries:
+            hooks[event] = entries
+        else:
+            hooks.pop(event, None)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    return True
+
+
+def launch_agent(load):
+    domain = f"gui/{os.getuid()}"
+    subprocess.run(["launchctl", "bootout", f"{domain}/{LABEL}"], capture_output=True)
+    if not load:
+        PLIST.unlink(missing_ok=True)
+        return
+    PLIST.parent.mkdir(parents=True, exist_ok=True)
+    PLIST.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>{LABEL}</string>
+  <key>ProgramArguments</key><array>
+    <string>{config.VENV}/bin/python</string><string>-m</string><string>pitwall.daemon</string>
+  </array>
+  <key>WorkingDirectory</key><string>{config.REPO}</string>
+  <key>EnvironmentVariables</key><dict><key>PYTHONPATH</key><string>{config.REPO}</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>{config.LOG_FILE}</string>
+  <key>StandardErrorPath</key><string>{config.LOG_FILE}</string>
+</dict></plist>
+""")
+    subprocess.run(["launchctl", "bootstrap", domain, str(PLIST)], check=True)
+
+
+def install():
+    config.HOME.mkdir(mode=0o700, parents=True, exist_ok=True)
+    print("Creating the daemon venv in", config.VENV)
+    subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
+    subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--upgrade", "iterm2"], check=True)
+    print("Adding hooks to", CLAUDE, "(backup kept next to it)")
+    edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=True)
+    if edit_hooks(CODEX, "codex", CODEX_EVENTS, add=True):
+        print("Adding hooks to", CODEX, "(Codex asks you to trust them on its next start)")
+    print("Starting the daemon")
+    launch_agent(load=True)
+    time.sleep(3)
+    doctor()
+    print("\nIn iTerm2, open View > Show Toolbelt, then Toolbelt > Pitwall.")
+
+
+def uninstall():
+    launch_agent(load=False)
+    edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=False)
+    edit_hooks(CODEX, "codex", CODEX_EVENTS, add=False)
+    config.DAEMON_FILE.unlink(missing_ok=True)
+    print("Removed the hooks and the LaunchAgent. Delete", config.HOME, "to remove the venv and state.")
+
+
+def daemon_answers():
+    d = config.read_daemon()
+    if not d:
+        return False
+    req = urllib.request.Request(f"http://127.0.0.1:{d['port']}/api/state", headers={"X-Pitwall-Token": d["token"]})
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status == 200
+    except OSError:
+        return False
+
+
+def count_hooks(path):
+    try:
+        hooks = json.loads(path.read_text()).get("hooks", {})
+    except (OSError, ValueError):
+        return 0
+    return sum(1 for entries in hooks.values() for e in entries if is_ours(e))
+
+
+def doctor():
+    api = subprocess.run(["defaults", "read", "com.googlecode.iterm2", "EnableAPIServer"], capture_output=True, text=True)
+    checks = [
+        ("python3 3.9 or newer is on PATH", sys.version_info >= (3, 9) and bool(shutil.which("python3")),
+         "Install Python 3.9 or newer."),
+        ("git is on PATH", bool(shutil.which("git")), "Install the Xcode command line tools."),
+        ("iTerm2 Python API is on", api.stdout.strip() == "1",
+         "In iTerm2, open Settings > General > Magic and turn on Enable Python API."),
+        ("Daemon venv has the iterm2 package",
+         subprocess.run([f"{config.VENV}/bin/python", "-c", "import iterm2"], capture_output=True).returncode == 0
+         if Path(f"{config.VENV}/bin/python").exists() else False, "Run: pitwall install"),
+        ("LaunchAgent is loaded", subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
+                                                 capture_output=True).returncode == 0, "Run: pitwall install"),
+        ("Daemon answers", daemon_answers(), f"Start iTerm2, then read {config.LOG_FILE}"),
+        (f"Claude Code hooks ({len(CLAUDE_EVENTS)} events)", count_hooks(CLAUDE) == len(CLAUDE_EVENTS),
+         "Run: pitwall install"),
+    ]
+    if CODEX.parent.exists():
+        checks.append((f"Codex hooks ({len(CODEX_EVENTS)} events)", count_hooks(CODEX) == len(CODEX_EVENTS),
+                       "Run: pitwall install"))
+    for label, ok, fix in checks:
+        print(f"  {'ok  ' if ok else 'FAIL'}  {label}" + ("" if ok else f"\n        {fix}"))
+    return all(ok for _, ok, _ in checks)

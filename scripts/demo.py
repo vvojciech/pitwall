@@ -41,6 +41,7 @@ SESSIONS = [
          loop={"reviewer": "2", "reviewer_agent": "codex", "round": 1, "max": 3, "auto": False, "phase": "fixing",
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]
+SESSIONS.append(SESSIONS.pop(0))  # tab order: the waiting agent is in the last tab
 FAILURES = [{"id": 1, "command": "npm run dev", "status": 1, "cwd": SHOP, "project": "acme-shop", "agent_sid": "1",
              "agent": "claude", "output": "Error: listen EADDRINUSE: address already in use :::3000",
              "busy": {"pid": 4211, "command": "node", "port": 3000, "project": "storefront"}}]

@@ -312,3 +312,11 @@ body.mission .usage-bar { display: none; }
 .today-row > span:first-child { color: var(--faint); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 .today-row .tval { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .mm .meter { grid-area: auto; display: block; }
+
+/* Order switch: a second row of the sticky header */
+.bar { flex-wrap: wrap; row-gap: 8px; }
+.order { flex-basis: 100%; display: flex; align-items: center; gap: 8px; }
+.order > span { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
+.order .seg { flex: 1; margin: 0; max-width: 220px; }
+.order .seg button { height: 22px; }
+body.mission .order { flex-basis: auto; margin-left: 12px; }

@@ -20,6 +20,13 @@
   <button class="icon-btn" id="mission" title="Open Mission Control" aria-label="Open Mission Control">
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
   </button>
+  <div class="order" role="group" aria-label="Order the agents">
+    <span>Order</span>
+    <div class="seg" id="order">
+      <button data-order="tabs" title="As your windows, tabs and panes are">Tabs</button>
+      <button data-order="activity" title="Agents that need you first, then the most recent">Activity</button>
+    </div>
+  </div>
 </header>
 <main id="cards" aria-live="polite"></main>
 <footer class="usage-bar" id="usage" aria-label="Plan usage"></footer>
@@ -29,5 +36,6 @@
 <script src="/usage.js"></script>
 <script src="/map.js"></script>
 <script src="/app.js"></script>
+<script src="/cards.js"></script>
 </body>
 </html>

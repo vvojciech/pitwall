@@ -84,19 +84,6 @@ function undoPanel(s) {
     <button class="btn" data-act="undo-cancel">Cancel</button></div></div>`;
 }
 
-// Your name for the card, else the iTerm2 tab's own name, else the project folder.
-function cardName(s) {
-  const project = base(s.cwd) || s.title;
-  if (ui.renaming === s.sid) {
-    return `<input class="rename-input" data-rename="${esc(s.sid)}" data-stop value="${esc(s.name || s.tab_name || "")}"
-      placeholder="${esc(project)}" maxlength="60" aria-label="Name this agent" spellcheck="false">`;
-  }
-  const name = s.name || s.tab_name;
-  const shown = name ? `${esc(name)}${name !== project ? `<small>${esc(project)}</small>` : ""}` : esc(project);
-  return `<span class="project" title="Double-click to rename">${shown}</span>
-    <button class="icon-btn small rename" data-act="rename" aria-label="Rename" title="Rename">${ICON.pencil}</button>`;
-}
-
 function card(s) {
   const busy = ui.pending[s.sid] ? "disabled" : "";
   const waiting = s.state === "waiting_permission";
@@ -136,7 +123,7 @@ function render() {
   } else if (!list.length) {
     html = `<div class="empty-state"><strong>No agents yet</strong>Start Claude Code or Codex in any iTerm2 tab and it shows up here.</div>`;
   } else {
-    html = list.map(card).join("");
+    html = ordered(list).map(card).join("");
   }
   if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
   if (!MISSION) {
@@ -238,36 +225,6 @@ $("usage").addEventListener("click", (e) => {
   if (e.target.closest("[data-usage]")) api("/api/open", { view: "activity" }).catch((err) => toast(err.message));
 });
 
-// Rename: double-click the name or use the pencil. Enter or leaving the field saves, Escape cancels.
-function startRename(sid) {
-  ui.renaming = sid;
-  render();
-  const input = document.querySelector("[data-rename]");
-  if (input) { input.focus(); input.select(); }
-}
-
-async function finishRename(input, save) {
-  const sid = input.dataset.rename;
-  if (ui.renaming !== sid) return;
-  ui.renaming = null;
-  input.blur();
-  if (save) {
-    try { await api("/api/rename", { sid, name: input.value }); } catch (e) { toast(e.message); }
-  }
-  await poll();
-}
-
-$("cards").addEventListener("dblclick", (e) => {
-  const name = e.target.closest(".project");
-  const el = name && name.closest("[data-sid]");
-  if (el) startRename(el.dataset.sid);
-});
-$("cards").addEventListener("keydown", (e) => {
-  if (!e.target.dataset.rename) return;
-  if (e.key === "Enter") finishRename(e.target, true);
-  if (e.key === "Escape") finishRename(e.target, false);
-});
-$("cards").addEventListener("focusout", (e) => { if (e.target.dataset.rename) finishRename(e.target, true); });
 $("mission").addEventListener("click", () => api("/api/mission", {}).catch((err) => toast(err.message)));
 
 if (MISSION) document.body.classList.add("mission");

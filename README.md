@@ -17,7 +17,8 @@ this for Ghostty.
 
 **See every agent**
 
-- **Agent panel.** One card per agent, in the order of your iTerm2 windows, tabs and panes:
+- **Agent panel.** One card per agent, in the order of your iTerm2 windows, tabs and panes, or
+  with the agents that need you first (the Tabs and Activity switch at the top):
   project, state (working, needs permission, waiting for you, done, failed), task, last action
   and a timer. Click a card to go to that pane. Double-click its name to rename it; the tab
   takes the same name. Plan usage stays pinned to the bottom of the panel.

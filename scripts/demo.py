@@ -34,7 +34,7 @@ def card(sid, cwd, agent, state, task, action=None, ago=0, done=None, **kw):
 
 SESSIONS = [
     card("1", SHOP, "claude", "waiting_permission", "Show the cart total with tax and shipping", "Edit CartSummary.tsx",
-         252, permission="Bash npm run db:migrate"),
+         252, permission="Bash npm run db:migrate", focused=True),
     card("2", "/Users/demo/code/billing-api", "codex", "working", "Retry failed webhooks with backoff", "Edit webhooks.ts", 75,
          name="Webhooks"),
     card("3", "/Users/demo/code/docs-site", "claude", "done", "Write the upgrade guide for v3", None, 900, 140, unseen=True,

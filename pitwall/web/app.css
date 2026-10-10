@@ -312,3 +312,5 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 /* The panel is a full-height column, so the usage strip sits at the bottom even with few cards. */
 body:not(.activity-page) { display: flex; flex-direction: column; min-height: 100vh; }
 body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }
+.map-follow { font-size: 10px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); }
+.group > .map-panel { margin: 0; }

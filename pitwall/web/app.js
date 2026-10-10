@@ -2,7 +2,7 @@
 const params = new URLSearchParams(location.search);
 const TOKEN = params.get("t") || "";
 const $ = (id) => document.getElementById(id);
-const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: {}, ports: [], stopping: null };
+const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: { sid: null, mode: "overview", data: null }, ports: [], stopping: null };
 
 const LABELS = {
   working: "Working", waiting_permission: "Needs permission", waiting_input: "Waiting for you",
@@ -100,7 +100,7 @@ function card(s) {
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
-    ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${mapPanel(s)}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}</article>`;
+    ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}</article>`;
 }
 
 function summary(list) {
@@ -122,7 +122,7 @@ function render() {
   } else {
     html = ordered(list).map(card).join("");
   }
-  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
+  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + mapSection(list) + portsSection();
   const bar = usageBar();
   if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
   $("summary").innerHTML = summary(list);
@@ -189,6 +189,8 @@ async function act(sid, name) {
 $("cards").addEventListener("click", (e) => {
   const fail = e.target.closest("[data-fail]");
   if (fail) return failureAct(fail);
+  const mapMode = e.target.closest("[data-map-mode]");
+  if (mapMode) return setMapMode(mapMode.dataset.mapMode);
   const port = e.target.closest("[data-port]");
   if (port) return portAct(port);
   const raceButton = e.target.closest("[data-race]");

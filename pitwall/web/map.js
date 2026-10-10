@@ -9,16 +9,31 @@ const VERB = { edit: "Editing", read: "Reading" };
 const DEP_LABELS = 4;  // above this many dependents, a chip counts them and their labels stay off
 const depCount = (d) => d.nodes.filter((n) => n.dependent).length;
 
-function mapPanel(s) {
-  const m = ui.map[s.sid];
-  if (!m) return "";
+// The map follows the agent in the active iTerm2 pane. With no agent there, it keeps the last one.
+function mapAgent(list) {
+  const focused = list.find((s) => s.focused && s.cwd);
+  if (focused) return focused;
+  return list.find((s) => s.sid === ui.map.sid && s.cwd) || list.find((s) => s.cwd) || null;
+}
+
+function mapSection(list) {
+  const s = mapAgent(list);
+  if (!s) return "";
+  if (ui.map.sid !== s.sid) {  // the active tab changed: show the new agent's map at once
+    ui.map.sid = s.sid;
+    ui.map.data = null;
+    loadMap().then(render).catch(() => {});
+  }
+  const m = ui.map;
   const modes = [["overview", "Overview"], ["files", "Files"]].map(([v, l]) =>
-    `<button class="${m.mode === v ? "on" : ""}" data-act="map-mode" data-value="${v}">${l}</button>`).join("");
+    `<button class="${m.mode === v ? "on" : ""}" data-map-mode="${v}">${l}</button>`).join("");
   let body;
   if (!m.data) body = `<p class="map-note">Reading the project…</p>`;
   else if (m.data.error) body = `<p class="map-note">${esc(m.data.error)}</p>`;
   else body = mapChips(m.data) + mapSvg(m.data, s) + mapLegend(m.data);
-  return `<div class="map-panel" data-stop>${body}<div class="map-foot"><div class="seg">${modes}</div></div></div>`;
+  const who = esc(s.name || s.tab_name || base(s.cwd));
+  return `<section class="group"><h2 class="split">Map · ${who}<span class="map-follow">${s.focused ? "active tab" : "last active"}</span></h2>
+    <div class="map-panel">${body}<div class="map-foot"><div class="seg">${modes}</div></div></div></section>`;
 }
 
 function mapChips(d) {
@@ -106,13 +121,20 @@ function mapLegend(d) {
     ${d.imports.length ? `<span><i class="dash"></i>Imports it</span>` : ""}</div>`;
 }
 
-async function loadMap(sid) {
-  const m = ui.map[sid];
-  if (!m) return;
-  const data = await api(`/api/map?sid=${encodeURIComponent(sid)}&mode=${m.mode}`);
-  if (ui.map[sid] === m) m.data = data;
+async function loadMap() {
+  const { sid, mode } = ui.map;
+  if (!sid) return;
+  const data = await api(`/api/map?sid=${encodeURIComponent(sid)}&mode=${mode}`);
+  if (ui.map.sid === sid && ui.map.mode === mode) ui.map.data = data;  // ignore an answer for an old pane
 }
 
 async function pollMaps() {
-  await Promise.all(Object.keys(ui.map).map((sid) => loadMap(sid).catch(() => {})));
+  await loadMap().catch(() => {});
+}
+
+function setMapMode(mode) {
+  ui.map.mode = mode === "files" ? "files" : "overview";
+  ui.map.data = null;
+  render();
+  loadMap().then(render).catch(() => {});
 }

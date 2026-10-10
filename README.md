@@ -24,8 +24,9 @@ this for Ghostty.
   takes the same name. Plan usage stays pinned to the bottom of the panel.
 - **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
   finishes or fails, until you look at it.
-- **Code map.** The project as a star map: folders by type, the files the agent read and edited
-  this turn, the file it works on now, and the files that import an edit.
+- **Code map.** The project of the agent in your active tab, as a star map: folders by type, the
+  files the agent read and edited this turn, the file it works on now, and the files that import
+  an edit. It switches when you change tabs.
 - **Timeline.** The agent's prompts, thinking, replies, tool calls and sub-agents.
 
 **Steer them**

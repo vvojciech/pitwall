@@ -6,6 +6,7 @@ const MORE_ICON = {
   send: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   open: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   stop: '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>',
+  map: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><circle cx="5" cy="6" r="1.5"/><circle cx="19" cy="7" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M10 10.5 6.2 7M14.2 11 17.8 8M13.4 14l2.8 3.6"/></svg>',
   loop: '<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
 };
 const AGENT = { claude: "Claude", codex: "Codex" };
@@ -54,6 +55,7 @@ function cardTools(s, busy) {
   const known = Boolean(s.agent_session);
   if (!known && !s.can_undo && !s.can_redo) return "";
   return `<div class="footer" data-stop>
+    ${s.cwd ? `<button class="btn ghost${ui.map[s.sid] ? " on" : ""}" data-act="map">${MORE_ICON.map}Map</button>` : ""}
     ${known ? `<button class="btn ghost${open}" data-act="timeline">${MORE_ICON.list}Timeline</button>
     <button class="btn ghost${ui.handoff[s.sid] ? " on" : ""}" data-act="handoff">${MORE_ICON.send}Hand off</button>` : ""}
     ${known && !s.loop && !s.reviews ? `<button class="btn ghost${ui.loopStart[s.sid] ? " on" : ""}" data-act="loop">${MORE_ICON.loop}Review loop</button>` : ""}
@@ -134,7 +136,14 @@ async function loadHandoff(sid) {
 
 // Returns true when the action was one of these features.
 async function featureAct(sid, name, button) {
-  if (name === "timeline") {
+  if (name === "map") {
+    if (ui.map[sid]) delete ui.map[sid];
+    else { ui.map[sid] = { mode: "overview" }; render(); await loadMap(sid); }
+  } else if (name === "map-mode") {
+    ui.map[sid] = { mode: button.dataset.value };
+    render();
+    await loadMap(sid);
+  } else if (name === "timeline") {
     if (ui.timeline[sid]) delete ui.timeline[sid];
     else { ui.timeline[sid] = {}; render(); await loadTimeline(sid); }
   } else if (name === "handoff") {

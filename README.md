@@ -28,6 +28,12 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
   "Undo turn" lists the files it will change, then puts them back. "Redo" brings the agent's
   changes back. Pitwall does not change your index, commits, branches or stash. Ignored
   files such as `node_modules` stay as they are.
+- **Code map.** "Map" on a card draws the project as a star map: folders by type (frontend,
+  backend and data, tests, config), and the files the agent read and edited this turn, lit. A
+  label follows the file the agent works on. Dashed lines show which files import an edited file,
+  and a chip warns when no test imports an edit. Overview shows the top two folder levels; Files
+  also shows the files beside the touched ones. Imports are read for JavaScript, TypeScript and
+  Python.
 - **Timeline.** "Timeline" on a card shows the agent's prompts, thinking, replies, tool calls
   and sub-agents, read from its transcript. It updates while it is open.
 - **Hand off.** "Hand off" on a card writes a message for Claude or Codex: the task, the recent

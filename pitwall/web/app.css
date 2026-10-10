@@ -246,3 +246,43 @@ th:first-child { text-align: left; }
 thead th { color: var(--faint); font-weight: 500; font-size: 11px; }
 tbody th { font-weight: 600; }
 tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+
+/* Code map: always a dark "space" surface, so its colours are validated once, on #0e0d0c. */
+.map-panel { margin: 8px -6px 0; border-radius: 10px; overflow: hidden; cursor: default;
+  background: radial-gradient(ellipse at 50% 45%, #1d2230 0%, #121318 55%, #0e0d0c 100%); color: #e9e6dc; }
+.map-panel .chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 8px 0; }
+.chip { font: 10.5px var(--mono); padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #c9c5ba; }
+.chip b { color: #fff; }
+.chip .add { color: #5dc58b; } .chip .del { color: #f06c61; }
+.chip.warn { color: #f2a93b; border-color: rgba(242,169,59,.4); }
+.map { display: block; width: 100%; height: auto; stroke: none; stroke-width: 0; }
+.map .edge { stroke: rgba(255,255,255,.13); stroke-width: .8; }
+.map .edge.hot { stroke: rgba(255,255,255,.32); }
+.map .link { stroke: #ff8c42; stroke-width: .9; stroke-dasharray: 3 3; opacity: .7; }
+.map .node { stroke: #0e0d0c; stroke-width: 1.2; }
+.g-root { fill: #f2efe6; } .g-frontend { fill: #3987e5; background: #3987e5; } .g-backend { fill: #c98500; background: #c98500; }
+.g-tests { fill: #d55181; background: #d55181; } .g-config { fill: #008300; background: #008300; } .g-other { fill: #7d7a73; background: #7d7a73; }
+.map .node.lit-read { stroke: #bfeaff; stroke-width: 2; }
+.map .node.lit-edit { stroke: #ff8c42; stroke-width: 2.2; }
+.map .node.dep { stroke: #ff8c42; stroke-width: 1; stroke-dasharray: 2 1.5; }
+.map .glow { filter: url(#mapglow); opacity: .75; }
+.map .glow.lit-read { fill: #8fd9ff; } .map .glow.lit-edit { fill: #ff7a2f; animation: mappulse 1.8s ease-in-out infinite; }
+@keyframes mappulse { 50% { opacity: .35; } }
+.map .lbl rect { fill: rgba(14,13,12,.82); stroke: rgba(255,255,255,.08); stroke-width: .6; }
+.map .lbl text { fill: #d8d4c9; font: 500 8.5px var(--mono); }
+.map .lbl.t-edit text { fill: #ffb37a; } .map .lbl.t-read text { fill: #bfeaff; } .map .lbl.t-dep text { fill: #ffcfa8; }
+.map .lbl.t-current rect { fill: #ff8c42; stroke: none; } .map .lbl.t-current text { fill: #1a0f06; font-weight: 700; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0 10px 6px; font-size: 10.5px; color: #a8a49a; }
+.map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.map-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.map-legend i.ring-read { border: 2px solid #bfeaff; width: 6px; height: 6px; }
+.map-legend i.ring-edit { border: 2px solid #ff8c42; width: 6px; height: 6px; }
+.map-legend i.dash { width: 12px; height: 0; border-radius: 0; border-top: 1.5px dashed #ff8c42; }
+.map-foot { padding: 0 8px 8px; }
+.map-foot .seg { margin: 0; border-color: rgba(255,255,255,.12); }
+.map-foot .seg button { color: #a8a49a; }
+.map-foot .seg button + button { border-color: rgba(255,255,255,.12); }
+.map-foot .seg button.on { background: #e9e6dc; color: #0e0d0c; }
+.map-note { margin: 0; padding: 18px 12px; color: #a8a49a; font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .map .glow.lit-edit { animation: none; } }
+.chip.dep { color: #ffcfa8; border-color: rgba(255,140,66,.35); }

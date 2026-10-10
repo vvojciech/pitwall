@@ -31,7 +31,7 @@
 
 | Rank | Feature | Size | Notes |
 |---|---|---|---|
-| 1 | Night shift phase 2 | M | Show the runs of Claude Desktop scheduled tasks and cloud routines as cards, and land their work through a worktree, a review and Merge or Discard. Design: `docs/plans/2026-10-10-schedule-view-design.md`. |
+| 1 | Night shift phase 2 | M | Show the runs of Claude Desktop scheduled tasks and cloud routines as cards, and land their work through a worktree, a review and Merge or Discard. |
 | 2 | Night shift phase 3 | L | Pitwall's own scheduler, only for what Claude does not cover: shell command jobs and local runs with no app open. Decide after phase 2. |
 | 3 | Isolated sessions | M | A sandboxed Claude or Codex in a throwaway Docker container with only the project mounted. |
 | 4 | Project memory window | E | Read and edit CLAUDE.md, AGENTS.md and the Claude notes for a project in one place. |

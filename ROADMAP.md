@@ -11,6 +11,7 @@
 - Busy port help, review loops, agent races, activity and plan usage.
 - Code map of the work (this turn or uncommitted), following the active tab.
 - 0.5.0: answer Claude's questions from the card.
+- 0.5.1: Codex checked live: card, task, action, context ring, Allow, Deny and timeline.
 - 0.1.0: one-line installer, `pitwall update`, CI on Python 3.9 and 3.13, README screenshots.
 - 0.2.0: live tests with real Claude agents for Allow, Deny, Send to Claude, Hand off and review
   loops.
@@ -19,9 +20,7 @@
 
 ## Verify next
 
-1. **Codex.** Approve Pitwall's hooks in Codex once (Codex asks at its next start), then check its
-   card, tab status and timeline.
-2. **Activity tooltip.** Its content is tested; its look is not, because the render tool cannot
+1. **Activity tooltip.** Its content is tested; its look is not, because the render tool cannot
    capture it.
 
 ## Next features

@@ -10,7 +10,7 @@ PROMPT_READY = re.compile(r"^\s*[❯›>]\s*1\.\s*Yes", re.M)
 
 COLOURS = {
     "waiting": iterm2.Color(232, 163, 61),
-    "done": iterm2.Color(86, 182, 120),
+    "done": iterm2.Color(18, 52, 32),  # very dark green: a quiet "finished" that does not shout
     "failed": iterm2.Color(226, 86, 74),
 }
 BADGES = {"waiting_permission": "Needs you", "waiting_input": "Waiting"}

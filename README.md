@@ -52,7 +52,9 @@ this for Ghostty.
   project, or start one to fix it.
 - **Busy ports.** When a port is taken, the panel names the process that holds it, with a
   button to stop it.
-- **Dev server tabs.** When Claude starts a dev server, Pitwall runs it in its own tab, so it
+- **Dev server tabs.** When Claude starts a dev server in the foreground, where it would block the
+  turn, Pitwall runs it in its own tab instead, and never starts a second copy. A server that
+  Claude starts in the background stays a background task of the session. Pitwall's tab
   keeps running after the turn. Claude gets the path of the log, which is in `.pitwall/` inside
   the project. Pitwall hides that folder from git with the repository's local exclude file.
 

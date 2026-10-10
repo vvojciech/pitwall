@@ -64,13 +64,24 @@ def share_memory(agent, payload):
 
 
 def move_dev_server(daemon, event, payload):
-    """Start a dev server in its own tab, and tell Claude where its output goes instead."""
-    command = (payload.get("tool_input") or {}).get("command", "")
-    if payload.get("tool_name") != "Bash" or os.environ.get("PITWALL_DEV_TABS") == "0" or not is_dev_server(command):
+    """Start a foreground dev server in its own tab, and tell Claude where its output goes instead.
+
+    A run_in_background command already keeps running as the session's own background task,
+    which is what someone who asks for it wants, so it is left alone.
+    """
+    tool_input = payload.get("tool_input") or {}
+    command = tool_input.get("command", "")
+    if (payload.get("tool_name") != "Bash" or tool_input.get("run_in_background")
+            or os.environ.get("PITWALL_DEV_TABS") == "0" or not is_dev_server(command)):
         return
-    log = post(daemon, "/api/devserver", {"sid": event["sid"], "cwd": event["cwd"], "command": command}, timeout=5)["log"]
-    reason = (f"Pitwall started this dev server in its own iTerm2 tab, so it keeps running after your turn. "
-              f"Do not start it again. Read its output and URL with: tail -n 40 {log}")
+    answer = post(daemon, "/api/devserver", {"sid": event["sid"], "cwd": event["cwd"], "command": command}, timeout=5)
+    log = answer["log"]
+    if answer.get("reused"):
+        reason = (f"This dev server already runs in its own iTerm2 tab, started by Pitwall. Do not start it again. "
+                  f"Read its output and URL with: tail -n 40 {log}")
+    else:
+        reason = (f"Pitwall started this dev server in its own iTerm2 tab, so it keeps running after your turn. "
+                  f"Do not start it again. Read its output and URL with: tail -n 40 {log}")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                              "permissionDecisionReason": reason}}))
 

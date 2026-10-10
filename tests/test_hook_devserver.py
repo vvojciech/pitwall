@@ -9,10 +9,10 @@ from pitwall import hook
 EVENT = {"sid": "A", "cwd": "/work/shop"}
 
 
-def run(command, env=None):
-    payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+def run(command, env=None, background=False, answer=None):
+    payload = {"tool_name": "Bash", "tool_input": {"command": command, "run_in_background": background}}
     out = io.StringIO()
-    with mock.patch.object(hook, "post", return_value={"log": "/h/shop.log"}) as post, \
+    with mock.patch.object(hook, "post", return_value=answer or {"log": "/h/shop.log"}) as post, \
             mock.patch.dict("os.environ", env or {}), redirect_stdout(out):
         hook.move_dev_server({"port": 1, "token": "t"}, EVENT, payload)
     return post, out.getvalue()
@@ -30,6 +30,17 @@ class DevServerHookTests(unittest.TestCase):
         post, out = run("npm test")
         post.assert_not_called()
         self.assertEqual(out, "")
+
+    def test_a_background_run_is_left_to_claude(self):
+        post, out = run("npm run dev", background=True)
+        post.assert_not_called()
+        self.assertEqual(out, "")
+
+    def test_a_running_dev_tab_is_reused(self):
+        post, out = run("npm run dev", answer={"log": "/h/shop.log", "reused": True})
+        reason = json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+        self.assertIn("already runs", reason)
+        self.assertIn("/h/shop.log", reason)
 
     def test_it_can_be_turned_off(self):
         post, out = run("npm run dev", {"PITWALL_DEV_TABS": "0"})

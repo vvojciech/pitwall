@@ -118,7 +118,9 @@ function render() {
   const list = ui.data ? ui.data.sessions : [];
   let html;
   if (!ui.data) {
-    html = `<div class="empty-state"><strong>Pitwall is not running</strong>Run <code>pitwall doctor</code> in a terminal.</div>`;
+    html = ui.updating
+      ? `<div class="empty-state"><strong>Updating Pitwall</strong>The panel comes back in a few seconds.</div>`
+      : `<div class="empty-state"><strong>Pitwall is not running</strong>Run <code>pitwall doctor</code> in a terminal.</div>`;
   } else if (!list.length) {
     html = `<div class="empty-state"><strong>No agents yet</strong>Start Claude Code or Codex in any iTerm2 tab and it shows up here.</div>`;
   } else {
@@ -128,6 +130,7 @@ function render() {
   const bar = usageBar();
   if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
   $("summary").innerHTML = summary(list);
+  updateButton();
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
   const typing = document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName);
@@ -150,6 +153,7 @@ async function poll() {
     const data = await api("/api/state");
     ui.offset = data.now - Date.now() / 1000;
     ui.data = data;
+    updateTimedOut();
   } catch {
     ui.data = null;
   }
@@ -225,6 +229,7 @@ $("cards").addEventListener("change", (e) => {
   if (ui.raceForm && "raceRepo" in e.target.dataset) ui.raceForm.repo = e.target.value;
 });
 $("race").addEventListener("click", toggleRaceForm);
+$("update").addEventListener("click", startUpdate);
 $("usage").addEventListener("click", (e) => {
   if (e.target.closest("[data-usage]")) api("/api/open", {}).catch((err) => toast(err.message));
 });

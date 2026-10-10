@@ -216,3 +216,37 @@ async function pollPorts() {
 async function pollTimelines() {
   await Promise.all(Object.keys(ui.timeline).map((sid) => loadTimeline(sid).catch(() => {})));
 }
+
+// The Update button in the top bar. It shows when GitHub has a newer Pitwall; a click runs `pitwall update`,
+// which restarts the service, and iTerm2 then reloads the panel at the new address.
+const UPDATE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>';
+function updateButton() {
+  const b = $("update"), u = ui.data && ui.data.update;
+  if (ui.updating) {
+    b.hidden = false; b.disabled = true; b.innerHTML = "Updating…";
+    return;
+  }
+  b.hidden = !u; b.disabled = false; b.innerHTML = `${UPDATE_ICON}Update`;
+  if (!u) return;
+  const what = u.latest && u.latest !== `v${ui.data.version}` ? `Pitwall ${u.latest} is out` : "A newer Pitwall is out";
+  b.title = `${what} (${u.behind} change${u.behind === 1 ? "" : "s"}). Click to update; the panel restarts.`;
+}
+
+async function startUpdate() {
+  ui.updating = Date.now();
+  updateButton();
+  try {
+    await api("/api/update", {});
+  } catch (err) {
+    ui.updating = null;
+    toast(err.message);
+    updateButton();
+  }
+}
+
+// Called on each answer from the service: an update that is still not done after a minute failed.
+function updateTimedOut() {
+  if (!ui.updating || Date.now() - ui.updating < 60000) return;
+  ui.updating = null;
+  toast("The update did not finish. Run pitwall update in a terminal, or read ~/.pitwall/update.log.");
+}

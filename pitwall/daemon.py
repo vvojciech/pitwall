@@ -16,7 +16,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, context, iterm, questions, snapshot
+from pitwall import __version__, config, context, iterm, questions, snapshot, updates
 from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
@@ -41,6 +41,7 @@ class Daemon:
         self.sessions = self.load()
         self.unseen = set()
         self.focused = None
+        self.update = None  # {"behind", "latest"} from the last check
 
     def url(self, page=""):
         return f"http://127.0.0.1:{self.port}/{page}?t={self.token}"
@@ -99,6 +100,9 @@ class Daemon:
             return routed
         if path == "/api/state":
             return reply(200, await self.state())
+        if path == "/api/update" and method == "POST":
+            updates.start_update()
+            return reply(200, {"ok": True})
         if path == "/api/open" and method == "POST":  # the activity page, in the default browser
             subprocess.Popen(["open", self.url("activity")])
             return reply(200, {"ok": True})
@@ -175,7 +179,8 @@ class Daemon:
                         context=context.for_session(s, config.HOME, Path.home()))
             cards.append(card)
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
-        return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards()}
+        return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards(),
+                "version": __version__, "update": self.update if self.update and self.update["behind"] else None}
 
     async def rename(self, s, session, name):
         """Name an agent's card and its iTerm2 tab. An empty name goes back to the defaults."""
@@ -203,6 +208,11 @@ class Daemon:
             self.changed(self.sessions[sid])
         if added or before != set(self.sessions):
             self.save()
+
+    async def check_updates_forever(self):
+        while True:
+            self.update = await asyncio.to_thread(updates.check, config.REPO)
+            await asyncio.sleep(updates.CHECK_EVERY)
 
     async def scan_forever(self):
         while True:
@@ -240,6 +250,8 @@ async def main(connection):
         daemon.status.write(s)
     await iterm.clear_stale(app, set(daemon.sessions))
     asyncio.get_running_loop().create_task(daemon.scan_forever())
+    if os.environ.get("PITWALL_UPDATE_CHECK") != "0":
+        asyncio.get_running_loop().create_task(daemon.check_updates_forever())
     print(f"pitwall: listening on 127.0.0.1:{port}", flush=True)
     async with iterm2.FocusMonitor(connection) as monitor:
         daemon.on_focus(focused_session(app, iterm2.FocusUpdate()))

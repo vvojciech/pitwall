@@ -15,7 +15,7 @@ function setOrder(order) {
   render();
 }
 
-// How full the agent's context window is, as a ring (like the Claude mobile app). Hover for numbers.
+// How full the agent's context window is, as a ring. Hover for the numbers.
 function contextRing(s) {
   const c = s.context;
   if (!c || c.used == null) return "";

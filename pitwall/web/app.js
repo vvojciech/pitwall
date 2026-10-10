@@ -3,7 +3,7 @@ const params = new URLSearchParams(location.search);
 const TOKEN = params.get("t") || "";
 const MISSION = params.get("view") === "mission";
 const $ = (id) => document.getElementById(id);
-const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, ports: [], stopping: null };
+const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, ports: [], stopping: null };
 
 const LABELS = {
   working: "Working", waiting_permission: "Needs permission", waiting_input: "Waiting for you",
@@ -96,7 +96,7 @@ function card(s) {
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
-    ${ask}${undoPanel(s)}${tools}${timelinePanel(s)}${handoffPanel(s)}${screen}</article>`;
+    ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}${screen}</article>`;
 }
 
 function summary(list) {

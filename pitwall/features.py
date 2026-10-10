@@ -14,6 +14,7 @@ import iterm2
 
 from pitwall import config, handoff, ports, snapshot, timeline
 from pitwall.http import reply
+from pitwall.loops import Loops
 from pitwall.snapshot import repo_root, same_project
 
 HANDOFFS = config.HOME / "handoffs"
@@ -32,6 +33,7 @@ class Features:
         self.d, self.conn = daemon, connection
         self.failures = deque(maxlen=8)
         self.next_id = 1
+        self.loops = Loops(self)
 
     # Failed commands -----------------------------------------------------------------------
 
@@ -86,7 +88,13 @@ class Features:
         else:
             new = await near.async_split_pane(vertical=True)
         await new.async_send_text(handoff.launch_command(agent, cwd, str(path)) + "\r")
-        return str(path)
+        return str(path), new.session_id
+
+    async def paste(self, session, text):
+        """Type a message into an agent as one prompt, then submit it."""
+        await session.async_send_text(_paste(text))
+        await asyncio.sleep(0.2)  # let the agent finish reading the paste before Enter
+        await session.async_send_text("\r")
 
     # Routes --------------------------------------------------------------------------------
 
@@ -108,6 +116,8 @@ class Features:
         if path == "/api/devserver":
             return reply(200, await self.dev_server(data))
         s = self.d.sessions.get(data.get("sid") or query.get("sid", ""))
+        if path.startswith("/api/loop/"):
+            return await self.loop_route(path, s, data)
         if path in ("/api/timeline", "/api/handoff") and not s:
             return reply(404, {"error": "That agent's tab is gone."})
         if path == "/api/timeline":
@@ -119,6 +129,28 @@ class Features:
             await self.launch(s["sid"], to, s["cwd"], data["text"], f"handoff-{os.path.basename(s['cwd'])}")
             return reply(200, {"ok": True})
         return None
+
+    async def loop_route(self, path, s, data):
+        if not s:
+            return reply(404, {"error": "That agent's tab is gone."})
+        if path == "/api/loop/start":
+            if s["state"] in ("working", "waiting_permission"):
+                return reply(409, {"error": "Start the loop when the agent finishes its turn."})
+            reviewer = "codex" if data.get("reviewer") == "codex" else "claude"
+            rounds = min(max(int(data.get("rounds") or 3), 1), 10)
+            await self.loops.start(s, reviewer, rounds, bool(data.get("auto")))
+        elif not s.get("loop"):
+            return reply(409, {"error": "No review loop on this agent."})
+        elif path == "/api/loop/send":
+            error = await self.loops.send(s)
+            if error:
+                return reply(409, {"error": error})
+        elif path == "/api/loop/stop":
+            self.loops.stop(s)
+        elif path == "/api/loop/close":
+            s.pop("loop", None)
+            self.d.save()
+        return reply(200, {"ok": True})
 
     def handoff_text(self, s, mode):
         first = s["snapshots"][0] if s["snapshots"] else None
@@ -150,9 +182,7 @@ class Features:
                 return reply(409, {"error": "No agent works in this project."})
             if agent["state"] in ("working", "waiting_permission"):
                 return reply(409, {"error": "The agent is busy. Send it when its turn ends."})
-            await session.async_send_text(_paste(handoff.failure_message(f)))
-            await asyncio.sleep(0.2)
-            await session.async_send_text("\r")
+            await self.paste(session, handoff.failure_message(f))
         else:  # /api/failures/fix
             to = "codex" if data.get("to") == "codex" else "claude"
             await self.launch(f["pane"], to, f["cwd"] or str(Path.home()), handoff.failure_message(f), "fix")

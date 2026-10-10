@@ -41,6 +41,13 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
   output lines. "Send to Claude" types it into the agent that works in that project, when the
   agent is not busy. With no agent there, "Fix with Claude" or "Codex" starts one in a new
   split. This needs iTerm2 shell integration.
+- **Busy ports.** When a command fails because its port is taken, the failed command shows
+  which process holds the port, and "Stop it" ends that process.
+- **Review loops.** "Review loop" on a card starts Codex or Claude in a new split to review the
+  agent's changes. Each time the reviewer answers CHANGES NEEDED, its findings go to the first
+  agent; each time that agent finishes, its new changes go back to the reviewer. The loop ends at
+  APPROVED or at the round limit. Each message waits for your Send, unless you choose to send
+  automatically. Nothing is typed into an agent during its turn.
 - **Dev server tabs.** When Claude starts a dev server (`npm run dev`, `vite`, `rails s` and
   others), Pitwall runs it in its own tab, so it keeps running after the turn. Claude gets
   the path of the log file. Turn it off with `PITWALL_DEV_TABS=0`.

@@ -50,6 +50,9 @@ def to_event(agent, name, payload, env, ts):
     if name == "Notification":
         event["notification_type"] = payload.get("notification_type")
         event["message"] = first_line(payload.get("message"))
+    if name == "Stop":
+        # The full reply, for review loops. Claude Code sends it; Codex may not.
+        event["last_message"] = (payload.get("last_assistant_message") or "")[:20000]
     if name == "StopFailure":
         event["error"] = first_line(payload.get("error") or payload.get("message") or "Agent stopped with an error")
     return event

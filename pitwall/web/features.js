@@ -6,7 +6,44 @@ const MORE_ICON = {
   send: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   open: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   stop: '<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>',
+  loop: '<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
 };
+const AGENT = { claude: "Claude", codex: "Codex" };
+
+function loopStartPanel(s) {
+  const l = ui.loopStart[s.sid];
+  if (!l) return "";
+  const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
+    `<button class="${String(v) === String(value) ? "on" : ""}" data-act="loop-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
+  return `<div class="panel handoff" data-stop>
+    <label>Reviewer</label>${seg("reviewer", [["codex", "Codex"], ["claude", "Claude"]], l.reviewer)}
+    <label>Rounds at most</label>${seg("rounds", [[2, "2"], [3, "3"], [5, "5"]], l.rounds)}
+    <label class="check"><input type="checkbox" data-act="loop-auto" ${l.auto ? "checked" : ""}> Send each message automatically</label>
+    <p class="hint-line">The reviewer opens in a new split and reviews this agent's changes. Its findings go back to this agent until it answers APPROVED. ${l.auto ? "" : "You press Send for each message."}</p>
+    <div class="row"><button class="btn primary" data-act="loop-go" ${ui.pending[s.sid] ? "disabled" : ""}>${MORE_ICON.loop}Start</button>
+    <button class="btn" data-act="loop-cancel">Cancel</button></div></div>`;
+}
+
+function loopStrip(s) {
+  if (s.reviews) return `<div class="loop-strip quiet">${MORE_ICON.loop}<span>Reviewer for <b>${esc(s.reviews)}</b></span></div>`;
+  const l = s.loop;
+  if (!l) return "";
+  const who = AGENT[l.reviewer_agent] || l.reviewer_agent;
+  const round = `round ${l.round} of ${l.max}`;
+  const done = { approved: ["ok", `Approved by ${who} in ${round}`], limit: ["warn", `No approval after ${l.max} rounds`],
+    stopped: ["quiet", "Review loop stopped"] }[l.phase];
+  if (done) {
+    return `<div class="loop-strip ${done[0]}" data-stop>${MORE_ICON.loop}<span>${done[1]}</span>
+      <button class="btn ghost" data-act="loop-close">Close</button></div>`;
+  }
+  const p = l.pending;
+  const status = p ? (p.to === "writer" ? `${who} asks for changes · ${round}` : `Fixes ready for ${who} · ${round}`)
+    : (l.phase === "reviewing" ? `${who} is reviewing · ${round}` : `Fixing the review · ${round}`);
+  const send = p ? `<div class="row"><button class="btn primary" data-act="loop-send" ${ui.pending[s.sid] ? "disabled" : ""}>${MORE_ICON.send}Send to ${p.to === "writer" ? "this agent" : who}</button></div>
+      <details><summary>Show the message</summary><pre>${esc(p.text)}</pre></details>` : "";
+  return `<div class="loop-strip ${p ? "ready" : "live"}" data-stop>${MORE_ICON.loop}<span>${status}</span>
+    <button class="btn ghost" data-act="loop-stop">Stop</button>${send}</div>`;
+}
 const KIND = { prompt: "You", text: "Says", thinking: "Thinks", tool: "Runs", agent: "Sub-agent" };
 const MODES = [["continue", "Continue"], ["review", "Review"], ["second", "Opinion"]];
 
@@ -19,6 +56,7 @@ function cardTools(s, busy) {
   return `<div class="footer" data-stop>
     ${known ? `<button class="btn ghost${open}" data-act="timeline">${MORE_ICON.list}Timeline</button>
     <button class="btn ghost${ui.handoff[s.sid] ? " on" : ""}" data-act="handoff">${MORE_ICON.send}Hand off</button>` : ""}
+    ${known && !s.loop && !s.reviews ? `<button class="btn ghost${ui.loopStart[s.sid] ? " on" : ""}" data-act="loop">${MORE_ICON.loop}Review loop</button>` : ""}
     ${settled && s.can_redo ? `<button class="btn ghost" data-act="redo" ${busy}>${ICON.redo}Redo</button>` : ""}
     ${settled && s.can_undo ? `<button class="btn ghost" data-act="undo" ${busy}>${ICON.undo}Undo</button>` : ""}</div>`;
 }
@@ -109,6 +147,22 @@ async function featureAct(sid, name, button) {
     await loadHandoff(sid);
   } else if (name === "handoff-cancel") {
     delete ui.handoff[sid];
+  } else if (name === "loop") {
+    if (ui.loopStart[sid]) delete ui.loopStart[sid];
+    else ui.loopStart[sid] = { reviewer: "codex", rounds: 3, auto: false };
+  } else if (name === "loop-reviewer" || name === "loop-rounds") {
+    ui.loopStart[sid][name.slice(5)] = name === "loop-rounds" ? Number(button.dataset.value) : button.dataset.value;
+  } else if (name === "loop-auto") {
+    ui.loopStart[sid].auto = button.checked;
+  } else if (name === "loop-cancel") {
+    delete ui.loopStart[sid];
+  } else if (name === "loop-go") {
+    const l = ui.loopStart[sid];
+    await api("/api/loop/start", { sid, reviewer: l.reviewer, rounds: l.rounds, auto: l.auto });
+    delete ui.loopStart[sid];
+    toast(`${AGENT[l.reviewer]} is starting in a new split to review this work.`);
+  } else if (["loop-send", "loop-stop", "loop-close"].includes(name)) {
+    await api(`/api/loop/${name.slice(5)}`, { sid });
   } else if (name === "handoff-go") {
     const h = ui.handoff[sid];
     await api("/api/handoff", { sid, to: h.to, text: h.text });

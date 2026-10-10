@@ -86,6 +86,28 @@ def parse(lines, limit=80):
     return list(items)
 
 
+def last_reply(lines):
+    """The full text of the agent's last reply in a transcript, or ''."""
+    reply = ""
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        if r.get("type") == "assistant":
+            content = (r.get("message") or {}).get("content")
+            texts = [b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"] \
+                if isinstance(content, list) else []
+            reply = "\n".join(texts) or reply
+        elif r.get("type") == "response_item":
+            p = r.get("payload") or {}
+            if p.get("type") == "message" and p.get("role") == "assistant":
+                reply = " ".join(c.get("text", "") for c in p.get("content") or [] if isinstance(c, dict)) or reply
+    return reply
+
+
 def transcript_path(s, home):
     """The transcript file of a session: from the hook payload, else from the agent's own layout."""
     if s.get("transcript") and Path(s["transcript"]).is_file():
@@ -97,6 +119,14 @@ def transcript_path(s, home):
         path = home / ".claude/projects" / slug(cwd) / f"{sid}.jsonl"
         return path if path.is_file() else None
     return next(iter(sorted((home / ".codex/sessions").glob(f"*/*/*/rollout-*{sid}.jsonl"))), None)
+
+
+def read_last_reply(s, home):
+    path = transcript_path(s, home)
+    if not path:
+        return ""
+    with open(path, errors="replace") as f:
+        return last_reply(f)
 
 
 def read(s, home, limit=80):

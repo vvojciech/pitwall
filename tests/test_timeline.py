@@ -30,6 +30,18 @@ def lines(records):
     return [json.dumps(r) for r in records] + ["not json"]
 
 
+class LastReplyTests(unittest.TestCase):
+    def test_claude_last_reply_is_complete(self):
+        from pitwall.timeline import last_reply
+        records = CLAUDE + [{"type": "assistant", "message": {"content": [
+            {"type": "text", "text": "Line one.\nLine two. APPROVED"}]}}]
+        self.assertEqual(last_reply(lines(records)), "Line one.\nLine two. APPROVED")
+
+    def test_codex_last_reply(self):
+        from pitwall.timeline import last_reply
+        self.assertEqual(last_reply(lines(CODEX)), "Done. Dark mode is on.")
+
+
 class TimelineTests(unittest.TestCase):
     def test_claude_transcript(self):
         items = parse(lines(CLAUDE))

@@ -84,6 +84,8 @@ class Daemon:
                 self.changed(s)
             else:
                 self.save()
+            if s and data["event"] == "Stop":
+                asyncio.get_running_loop().create_task(self.features.loops.on_stop(s, data.get("last_message")))
             return reply(200, {"ok": True})
         routed = await self.features.route(method, path, query, data)
         if routed:
@@ -143,8 +145,10 @@ class Daemon:
             if session is None:  # the scan removes cards; layout data can lag for a moment
                 continue
             card = {k: v for k, v in s.items() if k != "snapshots"}
+            writer = self.features.loops.writer_of(sid)
             card.update(title=session.name, focused=sid == self.focused, unseen=sid in self.unseen,
-                        can_undo=bool(s["snapshots"]), can_redo=bool(s.get("redo")))
+                        can_undo=bool(s["snapshots"]), can_redo=bool(s.get("redo")),
+                        reviews=writer and os.path.basename(writer.get("cwd") or ""))
             if with_screen:
                 card["screen"] = await iterm.screen_text(session, 14)
             cards.append(card)

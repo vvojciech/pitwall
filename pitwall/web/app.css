@@ -112,6 +112,20 @@ body.mission .brand .view { display: inline; }
 .failure { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 9px 10px; }
 .failure .fcmd { flex: 1; font: 11.5px var(--mono); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .failure pre { margin: 6px 0 8px; padding: 6px 8px; border-radius: 6px; background: var(--term-bg); color: var(--term-ink); font: 10.5px/1.4 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 6.5em; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.loop-strip { margin-top: 9px; padding: 7px 8px; border-radius: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; background: var(--line); cursor: default; }
+.loop-strip > svg { color: var(--blue); }
+.loop-strip > span { flex: 1; min-width: 0; }
+.loop-strip .btn.ghost { height: 22px; }
+.loop-strip .row, .loop-strip details { flex-basis: 100%; }
+.loop-strip.ready { background: var(--amber-bg); }
+.loop-strip.ready > svg { color: var(--amber); }
+.loop-strip.ok > svg { color: var(--green); }
+.loop-strip.warn > svg { color: var(--amber); }
+.loop-strip.quiet { background: none; border: 1px dashed var(--line); color: var(--muted); }
+.loop-strip.live > svg { animation: spin 2.4s linear infinite; }
+.loop-strip details summary { cursor: pointer; color: var(--muted); }
+.loop-strip pre { margin: 6px 0 0; padding: 6px 8px; border-radius: 6px; background: var(--term-bg); color: var(--term-ink); font: 10.5px/1.4 var(--mono); white-space: pre-wrap; max-height: 180px; overflow: auto; }
+.handoff label.check { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-size: 11px; color: var(--ink); margin-bottom: 4px; }
 .busy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0 0 8px; padding: 7px 8px; border-radius: 6px; background: var(--amber-bg); color: var(--ink); font-size: 11px; }
 .busy b { font-family: var(--mono); }
 .btn.danger { color: var(--red); border-color: var(--red); }

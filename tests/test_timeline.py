@@ -22,6 +22,7 @@ CODEX = [
     {"type": "response_item", "payload": {"type": "reasoning", "summary": [{"type": "summary_text", "text": "Plan the theme tokens"}]}},
     {"type": "response_item", "payload": {"type": "function_call", "name": "shell", "arguments": json.dumps({"command": ["bash", "-lc", "npm test"]})}},
     {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "apply_patch", "input": "*** Begin Patch\n*** Update File: src/theme.ts\n"}},
+    {"type": "response_item", "payload": {"type": "custom_tool_call", "name": "exec", "input": 'const r = await tools.exec_command({cmd:"touch \\"a b.txt\\""}); text(r);\n'}},
     {"type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Done. Dark mode is on."}]}},
 ]
 
@@ -60,6 +61,7 @@ class TimelineTests(unittest.TestCase):
             ("thinking", "Plan the theme tokens"),
             ("tool", "shell npm test"),
             ("tool", "apply_patch src/theme.ts"),
+            ("tool", 'Bash touch "a b.txt"'),
             ("text", "Done. Dark mode is on."),
         ])
 

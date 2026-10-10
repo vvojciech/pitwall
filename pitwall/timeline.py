@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import deque
 from pathlib import Path
 
@@ -35,10 +36,19 @@ def _claude(record):
             yield _item("agent" if name in AGENT_TOOLS else "tool", describe(name, block.get("input")), ts)
 
 
+EXEC_COMMAND = re.compile(r'tools\.exec_command\(\{\s*cmd\s*:\s*("(?:[^"\\]|\\.)*")')
+
+
 def _codex_tool(payload):
     name = payload.get("name")
     if payload.get("type") == "custom_tool_call":
         text = payload.get("input") or ""
+        # Codex's code mode runs commands as JavaScript: tools.exec_command({cmd:"npm test"}).
+        command = EXEC_COMMAND.search(text)
+        try:
+            return f"Bash {first_line(json.loads(command.group(1)), 80)}"
+        except (AttributeError, ValueError):  # no command, or a JavaScript escape that JSON lacks
+            pass
         match = PATCH_FILE.search(text)
         code = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("//"))
         return f"{name} {match.group(1) if match else first_line(code, 80)}".strip()

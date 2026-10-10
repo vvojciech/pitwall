@@ -74,6 +74,29 @@ def touched_files(tool, tool_input, cwd):
     return {}
 
 
+def _cron(job):
+    return {"id": str(job["id"]), "schedule": str(job.get("schedule") or ""), "recurring": bool(job.get("recurring")),
+            "prompt": first_line(str(job.get("prompt") or ""))}
+
+
+def schedule_change(tool, tool_input, response):
+    """What a finished CronCreate, CronDelete or ScheduleWakeup call changed, as event fields."""
+    tool_input = tool_input if isinstance(tool_input, dict) else {}
+    response = response if isinstance(response, dict) else {}
+    if tool == "CronCreate" and response.get("id"):
+        job = _cron({"id": response["id"], "schedule": tool_input.get("cron"), "prompt": tool_input.get("prompt"),
+                     "recurring": tool_input.get("recurring", True)})
+        return {"cron_add": dict(job, human=first_line(str(response.get("humanSchedule") or "")))}
+    if tool == "CronDelete" and tool_input.get("id"):
+        return {"cron_del": str(tool_input["id"])}
+    if tool == "ScheduleWakeup":
+        at = response.get("scheduledFor")
+        return {"wakeup": {"at": at / 1000 if isinstance(at, (int, float)) else None,
+                           "reason": first_line(str(tool_input.get("reason") or "")) or None,
+                           "prompt": first_line(str(tool_input.get("prompt") or "")), "stop": bool(tool_input.get("stop"))}}
+    return {}
+
+
 def to_event(agent, name, payload, env, ts):
     """Return the event dict, or None when the agent does not run in iTerm2."""
     iterm_id = env.get("ITERM_SESSION_ID", "")
@@ -92,6 +115,7 @@ def to_event(agent, name, payload, env, ts):
         # Background-task notifications arrive as prompts too; prompt_text drops them.
         text = prompt_text(payload.get("prompt"))
         event["task"] = first_line(text) if text else None
+        event["prompt_line"] = first_line(payload.get("prompt"))  # a scheduled job fires as this prompt
     tool = payload.get("tool_name")
     if tool:
         event["action"] = describe(tool, payload.get("tool_input"))
@@ -106,7 +130,9 @@ def to_event(agent, name, payload, env, ts):
     if isinstance(payload.get("background_tasks"), list):
         event["background"] = [_background(t) for t in payload["background_tasks"][:MAX_BACKGROUND] if isinstance(t, dict)]
     if isinstance(payload.get("session_crons"), list):
-        event["crons"] = len(payload["session_crons"])
+        event["crons"] = [_cron(c) for c in payload["session_crons"] if isinstance(c, dict) and c.get("id")]
+    if name == "PostToolUse":
+        event.update(schedule_change(tool, payload.get("tool_input"), payload.get("tool_response")))
     if name == "Stop":
         # The full reply, for review loops. Claude Code sends it; Codex may not.
         event["last_message"] = (payload.get("last_assistant_message") or "")[:20000]

@@ -74,6 +74,47 @@ def next_fire(expr, after):
     return None
 
 
+def _is_loop(job):
+    return (job.get("prompt") or "").startswith("/loop")
+
+
+def _time_wakeup(s):
+    """A /loop wake-up reaches Pitwall as a tool call and as a one-shot job; join the two."""
+    wake = s.get("wakeup")
+    for job in s["schedules"].values():
+        if wake and not job.get("recurring") and job.get("prompt") == wake["prompt"]:
+            job.update(at=wake["at"], reason=wake["reason"])
+
+
+def apply(s, event):
+    """Update the session's jobs from one event. The list at each Stop is the authority."""
+    jobs, ts = s.setdefault("schedules", {}), event["ts"]
+    if "crons" in event:
+        jobs = s["schedules"] = {c["id"]: dict(jobs.get(c["id"], {}), **c) for c in event["crons"]}
+    if event.get("cron_add"):
+        job = event["cron_add"]
+        jobs[job["id"]] = dict(jobs.get(job["id"], {}), **job)
+    if event.get("cron_del"):
+        jobs.pop(event["cron_del"], None)
+    wake = event.get("wakeup")
+    if wake and wake["stop"]:
+        s["wakeup"] = None
+        for key in [k for k, job in jobs.items() if _is_loop(job)]:
+            del jobs[key]
+    elif wake:
+        s["wakeup"] = wake
+    for job in jobs.values():
+        job.setdefault("first_seen", ts)
+    _time_wakeup(s)
+    fired = event["event"] == "UserPromptSubmit" and event.get("prompt_line")
+    for key, job in list(jobs.items()) if fired else ():
+        if job.get("prompt") == fired:
+            if job.get("recurring"):
+                job["last_fired"] = ts
+            else:
+                del jobs[key]
+
+
 def _row(job, now):
     prompt = job.get("prompt") or ""
     loop = prompt.startswith("/loop")

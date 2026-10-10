@@ -1,6 +1,8 @@
 """Agent state per iTerm2 session, driven by hook events."""
 from __future__ import annotations
 
+from pitwall import schedules
+
 MAX_SNAPSHOTS = 20
 WAITING = ("waiting_permission", "waiting_input")
 
@@ -91,8 +93,7 @@ def apply(sessions, event):
     s["transcript"] = event.get("transcript") or s.get("transcript")
     if "background" in event:  # only some events report it; keep the last report until the next
         s["background"] = event["background"]
-    if "crons" in event:
-        s["crons"] = event["crons"]
+    schedules.apply(s, event)
 
     # Questions from AskUserQuestion stay up while Claude waits for the answer, and go with the next event.
     if name not in ("PermissionRequest", "Notification"):

@@ -45,8 +45,39 @@ class EventTests(unittest.TestCase):
         e = ev("Stop", {"background_tasks": tasks, "session_crons": [{"id": "c1"}]})
         self.assertEqual([t["type"] for t in e["background"]], ["shell", "subagent"])
         self.assertLessEqual(len(e["background"][0]["command"]), 120)
-        self.assertEqual(e["crons"], 1)
+        self.assertEqual([c["id"] for c in e["crons"]], ["c1"])
         self.assertNotIn("background", ev("Stop", {}))
+
+    # Payloads captured from Claude Code 2.1 on 2026-10-10.
+    def test_stop_carries_the_scheduled_jobs(self):
+        crons = [{"id": "a3ecd9af", "schedule": "7 3 * * *", "recurring": True, "prompt": "nightly check\nmore"},
+                 {"id": "84336790", "schedule": "56 21 * * *", "recurring": False, "prompt": "/loop check the time"}]
+        e = ev("Stop", {"session_crons": crons})
+        self.assertEqual(e["crons"][0], {"id": "a3ecd9af", "schedule": "7 3 * * *", "recurring": True,
+                                         "prompt": "nightly check"})
+        self.assertEqual(e["crons"][1]["recurring"], False)
+        self.assertNotIn("crons", ev("Stop", {}))
+
+    def test_cron_tools_become_schedule_changes(self):
+        e = ev("PostToolUse", {"tool_name": "CronCreate",
+                               "tool_input": {"cron": "7 3 * * *", "prompt": "nightly check", "recurring": True},
+                               "tool_response": {"id": "a3ecd9af", "humanSchedule": "Every day at 3:07 AM"}})
+        self.assertEqual(e["cron_add"], {"id": "a3ecd9af", "schedule": "7 3 * * *", "recurring": True,
+                                         "prompt": "nightly check", "human": "Every day at 3:07 AM"})
+        e = ev("PostToolUse", {"tool_name": "CronCreate", "tool_input": {"cron": "7 3 * * *", "prompt": "x"}})
+        self.assertNotIn("cron_add", e)  # no id: wait for the next list
+        self.assertEqual(ev("PostToolUse", {"tool_name": "CronDelete", "tool_input": {"id": "a3ecd9af"}})["cron_del"],
+                         "a3ecd9af")
+        self.assertNotIn("cron_add", ev("PreToolUse", {"tool_name": "CronCreate", "tool_input": {"cron": "x"}}))
+
+    def test_a_wakeup_has_an_exact_time(self):
+        e = ev("PostToolUse", {"tool_name": "ScheduleWakeup",
+                               "tool_input": {"delaySeconds": 60, "reason": "Check again", "prompt": "/loop check the time"},
+                               "tool_response": {"scheduledFor": 1791662160000, "clampedDelaySeconds": 60}})
+        self.assertEqual(e["wakeup"], {"at": 1791662160.0, "reason": "Check again", "prompt": "/loop check the time",
+                                       "stop": False})
+        stop = ev("PostToolUse", {"tool_name": "ScheduleWakeup", "tool_input": {"stop": True}})
+        self.assertTrue(stop["wakeup"]["stop"])
 
     def test_tool_events_carry_the_full_path_and_kind(self):
         e = ev("PostToolUse", {"tool_name": "Edit", "tool_input": {"file_path": "/a/src/app.ts"}})
@@ -158,6 +189,52 @@ class StateTests(unittest.TestCase):
         self.assertEqual(len(s["background"]), 1)  # a new prompt does not end background work
         apply(sessions, ev("Stop", {"background_tasks": []}))
         self.assertEqual(s["background"], [])
+
+    def test_scheduled_jobs_follow_the_reports(self):
+        nightly = {"id": "a", "schedule": "7 3 * * *", "recurring": True, "prompt": "nightly"}
+        sessions = self.run_events(ev("PostToolUse", {"tool_name": "CronCreate",
+                                                      "tool_input": {"cron": "7 3 * * *", "prompt": "nightly"},
+                                                      "tool_response": {"id": "a", "humanSchedule": "Every day"}}, ts=10))
+        s = sessions["ABC-123"]
+        self.assertEqual((s["schedules"]["a"]["first_seen"], s["schedules"]["a"]["human"]), (10, "Every day"))
+        once = {"id": "b", "schedule": "0 9 11 10 *", "recurring": False, "prompt": "remind me"}
+        apply(sessions, ev("Stop", {"session_crons": [nightly, once]}, ts=20))
+        self.assertEqual(sorted(s["schedules"]), ["a", "b"])
+        self.assertEqual((s["schedules"]["a"]["first_seen"], s["schedules"]["a"]["human"]), (10, "Every day"))
+        self.assertEqual(s["schedules"]["b"]["first_seen"], 20)
+        apply(sessions, ev("PostToolUse", {"tool_name": "CronDelete", "tool_input": {"id": "a"}}))
+        self.assertEqual(list(s["schedules"]), ["b"])
+        apply(sessions, ev("Stop", {"session_crons": []}))
+        self.assertEqual(s["schedules"], {})
+
+    def test_a_fire_is_recorded_and_a_one_shot_goes(self):
+        jobs = [{"id": "a", "schedule": "0 * * * *", "recurring": True, "prompt": "check the deploy"},
+                {"id": "b", "schedule": "0 9 11 10 *", "recurring": False, "prompt": "remind me"}]
+        sessions = self.run_events(ev("Stop", {"session_crons": jobs}))
+        s = sessions["ABC-123"]
+        apply(sessions, ev("UserPromptSubmit", {"prompt": "check the deploy"}, ts=50))
+        self.assertEqual(s["schedules"]["a"]["last_fired"], 50)
+        apply(sessions, ev("UserPromptSubmit", {"prompt": "remind me"}, ts=60))
+        self.assertNotIn("b", s["schedules"])
+
+    def test_a_wakeup_times_its_loop_job(self):
+        wake = {"tool_name": "ScheduleWakeup", "tool_input": {"delaySeconds": 60, "reason": "Check again",
+                                                             "prompt": "/loop check"},
+                "tool_response": {"scheduledFor": 160000}}
+        sessions = self.run_events(ev("PostToolUse", wake))  # the job arrives with the next Stop
+        s = sessions["ABC-123"]
+        loop = {"id": "w", "schedule": "1 0 1 1 *", "recurring": False, "prompt": "/loop check"}
+        apply(sessions, ev("Stop", {"session_crons": [loop]}))
+        self.assertEqual((s["schedules"]["w"]["at"], s["schedules"]["w"]["reason"]), (160.0, "Check again"))
+        apply(sessions, ev("PostToolUse", {"tool_name": "ScheduleWakeup", "tool_input": {"stop": True}}))
+        self.assertEqual(s["schedules"], {})
+
+    def test_stopping_marks_the_job_until_the_report(self):
+        jobs = [{"id": "a", "schedule": "0 * * * *", "recurring": True, "prompt": "x"}]
+        sessions = self.run_events(ev("Stop", {"session_crons": jobs}))
+        sessions["ABC-123"]["schedules"]["a"]["stopping"] = True
+        apply(sessions, ev("Stop", {"session_crons": jobs}))
+        self.assertTrue(sessions["ABC-123"]["schedules"]["a"]["stopping"])
 
     def test_a_name_stays_with_the_pane(self):
         sessions = self.run_events(ev("SessionStart"))

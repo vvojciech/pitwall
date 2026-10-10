@@ -10,7 +10,8 @@ See every Claude Code and Codex session at once. Answer them without switching t
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-555" alt="MIT license"></a>
 </p>
 
-<p align="center"><img src="docs/images/hero.png" alt="iTerm2 with Claude Code asking to run a migration on the left, and the Pitwall panel on the right: the same request with Allow and Deny, and a second agent asking which screens get dark mode first"></p>
+<p align="center"><a href="docs/media/pitwall-demo.mp4"><img src="docs/images/demo.gif" alt="Pitwall in iTerm2, 30 seconds: four agents in four tabs with the Pitwall panel on the right. Allow a permission from the panel, answer a question on a card, the code map of the active tab, hand off to Codex, stop the process that holds a busy port, jump to a finished agent's tab, and the plan limit bars"></a><br>
+<sub>30 seconds. Click for the full-size video.</sub></p>
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/vvojciech/pitwall/main/install.sh | bash

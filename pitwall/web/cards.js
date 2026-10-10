@@ -15,6 +15,21 @@ function setOrder(order) {
   render();
 }
 
+// Background work Claude Code reported at its last stop: shells, sub-agents, monitors, wake-ups.
+const BG_SHOWN = 3;
+function backgroundList(s) {
+  const tasks = s.background || [];
+  const crons = s.crons || 0;
+  if (!tasks.length && !crons) return "";
+  const row = (type, text, status) => `<li><span class="bg-type">${esc(type)}</span>
+    <span class="bg-desc">${esc(text)}</span>${status ? `<span class="bg-status">${esc(status)}</span>` : ""}</li>`;
+  let rows = tasks.slice(0, BG_SHOWN).map((t) => row(t.type || "task", t.description || t.command || "", t.status)).join("");
+  if (tasks.length > BG_SHOWN) rows += `<li class="bg-more">and ${tasks.length - BG_SHOWN} more</li>`;
+  if (crons) rows += row("wake-up", `${crons} scheduled`, "");
+  const all = tasks.map((t) => `${t.type}: ${t.description || t.command} (${t.status})`).join("\n");
+  return `<ul class="bg" title="${esc(all)}">${rows}</ul>`;
+}
+
 // Your name for the card, else the iTerm2 tab's own name, else the project folder.
 function cardName(s) {
   const project = base(s.cwd) || s.title;

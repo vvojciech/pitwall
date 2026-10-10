@@ -38,6 +38,9 @@ SESSIONS = [
     card("2", "/Users/demo/code/billing-api", "codex", "working", "Retry failed webhooks with backoff", "Edit webhooks.ts", 75,
          name="Webhooks"),
     card("3", "/Users/demo/code/docs-site", "claude", "done", "Write the upgrade guide for v3", None, 900, 140, unseen=True,
+         background=[{"type": "shell", "status": "running", "description": "Docs dev server", "command": "npm run dev"},
+                     {"type": "subagent", "status": "running", "description": "Check every link in the guide"}],
+         crons=1,
          loop={"reviewer": "2", "reviewer_agent": "codex", "round": 1, "max": 3, "auto": False, "phase": "fixing",
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]

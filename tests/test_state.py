@@ -24,6 +24,16 @@ class EventTests(unittest.TestCase):
     def test_a_system_notification_is_not_a_task(self):
         self.assertIsNone(ev("UserPromptSubmit", {"prompt": "<task-notification>\n<task-id>x</task-id>"})["task"])
 
+    def test_stop_carries_background_work(self):
+        tasks = [{"id": "b1", "type": "shell", "status": "running", "description": "Dev server",
+                  "command": "npm run dev " + "x" * 300},
+                 {"id": "b2", "type": "subagent", "status": "pending", "description": "Search callers"}]
+        e = ev("Stop", {"background_tasks": tasks, "session_crons": [{"id": "c1"}]})
+        self.assertEqual([t["type"] for t in e["background"]], ["shell", "subagent"])
+        self.assertLessEqual(len(e["background"][0]["command"]), 120)
+        self.assertEqual(e["crons"], 1)
+        self.assertNotIn("background", ev("Stop", {}))
+
     def test_tool_events_carry_the_full_path_and_kind(self):
         e = ev("PostToolUse", {"tool_name": "Edit", "tool_input": {"file_path": "/a/src/app.ts"}})
         self.assertEqual((e["path"], e["touch"]), ("/a/src/app.ts", "edit"))
@@ -125,6 +135,15 @@ class StateTests(unittest.TestCase):
         sessions = self.run_events(ev("UserPromptSubmit", {"prompt": "x"}))
         apply(sessions, ev("SessionStart", agent="codex"))
         self.assertEqual((sessions["ABC-123"]["agent"], sessions["ABC-123"]["state"]), ("codex", "idle"))
+
+    def test_background_work_is_kept_until_the_next_report(self):
+        work = [{"id": "b1", "type": "shell", "status": "running", "description": "Dev server"}]
+        sessions = self.run_events(ev("Stop", {"background_tasks": work}))
+        s = sessions["ABC-123"]
+        apply(sessions, ev("UserPromptSubmit", {"prompt": "next"}))
+        self.assertEqual(len(s["background"]), 1)  # a new prompt does not end background work
+        apply(sessions, ev("Stop", {"background_tasks": []}))
+        self.assertEqual(s["background"], [])
 
     def test_a_name_stays_with_the_pane(self):
         sessions = self.run_events(ev("SessionStart"))

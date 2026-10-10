@@ -314,3 +314,12 @@ body:not(.activity-page) { display: flex; flex-direction: column; min-height: 10
 body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }
 .map-follow { font-size: 10px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--faint); }
 .group > .map-panel { margin: 0; }
+
+/* Background work under a card's task */
+.bg { list-style: none; margin: 7px 0 0; padding: 6px 8px; border-radius: 7px; background: var(--line); display: grid; gap: 3px; font-size: 11px; cursor: default; }
+.bg li { display: grid; grid-template-columns: 58px 1fr auto; gap: 6px; align-items: baseline; min-width: 0; }
+.bg-type { color: var(--faint); font: 10.5px var(--mono); }
+.bg-desc { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.bg-status { color: var(--blue); font-size: 10.5px; }
+.bg-more { color: var(--faint); display: block !important; }
+.order .bgcount { margin-left: auto; color: var(--blue); font-size: 10.5px; text-transform: none; letter-spacing: 0; white-space: nowrap; }

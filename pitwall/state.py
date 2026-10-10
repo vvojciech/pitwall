@@ -88,6 +88,10 @@ def apply(sessions, event):
     s["cwd"] = event.get("cwd") or s["cwd"]
     s["agent_session"] = event.get("agent_session") or s["agent_session"]
     s["transcript"] = event.get("transcript") or s.get("transcript")
+    if "background" in event:  # only some events report it; keep the last report until the next
+        s["background"] = event["background"]
+    if "crons" in event:
+        s["crons"] = event["crons"]
 
     if name == "UserPromptSubmit":
         s.update(state="working", task=event.get("task") or s["task"], started=event["ts"],

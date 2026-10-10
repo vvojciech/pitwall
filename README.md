@@ -22,6 +22,8 @@ this for Ghostty.
   project, state (working, needs permission, waiting for you, done, failed), task, last action
   and a timer. Click a card to go to that pane. Double-click its name to rename it; the tab
   takes the same name. Plan usage stays pinned to the bottom of the panel.
+- **Background work.** When a Claude Code turn ends with work still running (a background shell,
+  a sub-agent, a monitor or a scheduled wake-up), the card lists it, and the header counts it.
 - **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
   finishes or fails, until you look at it.
 - **Code map.** The project of the agent in your active tab, as a star map: folders by type, the

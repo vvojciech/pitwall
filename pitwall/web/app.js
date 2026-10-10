@@ -99,7 +99,7 @@ function card(s) {
       <span class="timer" ${timerAttr(s)}></span></div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
-    ${task}${action}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
+    ${task}${action}${backgroundList(s)}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
     ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}</article>`;
 }
 
@@ -109,6 +109,8 @@ function summary(list) {
   const waiting = n(["waiting_permission", "waiting_input"]);
   if (waiting) parts.push(`<b>${waiting} waiting</b>`);
   if (n(["working"])) parts.push(`${n(["working"])} working`);
+  const background = list.reduce((sum, s) => sum + (s.background || []).length, 0);
+  $("bgcount").textContent = background ? `${background} in background` : "";
   return parts.join(" · ") || (list.length ? "All quiet" : "");
 }
 

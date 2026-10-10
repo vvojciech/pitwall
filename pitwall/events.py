@@ -32,6 +32,17 @@ EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
 
 
+MAX_BACKGROUND = 20
+
+
+def _background(task):
+    """One background task, trimmed to what the panel shows."""
+    out = {k: first_line(str(task.get(k) or ""), 120) for k in ("type", "status", "description")}
+    if task.get("command"):
+        out["command"] = first_line(str(task["command"]), 120)
+    return out
+
+
 def touched_files(tool, tool_input, cwd):
     """For the code map: {path, touch} for a file tool, {paths, touch} for a Codex patch, else {}."""
     tool_input = tool_input if isinstance(tool_input, dict) else {}
@@ -70,6 +81,12 @@ def to_event(agent, name, payload, env, ts):
     if name == "Notification":
         event["notification_type"] = payload.get("notification_type")
         event["message"] = first_line(payload.get("message"))
+    # Claude Code reports in-flight background work (shells, sub-agents, monitors) and scheduled
+    # wake-ups, so "done" can be told apart from "paused while background work runs".
+    if isinstance(payload.get("background_tasks"), list):
+        event["background"] = [_background(t) for t in payload["background_tasks"][:MAX_BACKGROUND] if isinstance(t, dict)]
+    if isinstance(payload.get("session_crons"), list):
+        event["crons"] = len(payload["session_crons"])
     if name == "Stop":
         # The full reply, for review loops. Claude Code sends it; Codex may not.
         event["last_message"] = (payload.get("last_assistant_message") or "")[:20000]

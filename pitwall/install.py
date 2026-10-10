@@ -124,8 +124,9 @@ def install():
         print("Pitwall needs macOS and iTerm2 (https://iterm2.com) in /Applications.")
         return False
     config.HOME.mkdir(mode=0o700, parents=True, exist_ok=True)
-    print("Creating the daemon venv in", config.VENV)
-    subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
+    if not (config.VENV / "bin" / "python").exists():
+        print("Creating the daemon venv in", config.VENV)
+        subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
     subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--disable-pip-version-check", "--upgrade", "iterm2"], check=True)
     if not CLAUDE.parent.exists() and not CODEX.parent.exists():
         print("No Claude Code (~/.claude) and no Codex (~/.codex) found. Install one, then run: pitwall install")
@@ -158,7 +159,9 @@ def update():
     after = subprocess.run(["git", "-C", str(config.REPO), "rev-parse", "--short", "HEAD"],
                            capture_output=True, text=True).stdout.strip()
     print("Already up to date." if before == after else f"Updated {before} to {after}.")
-    return install()
+    sys.stdout.flush()
+    # The pull changed the files, not the code already imported: run the new installer.
+    os.execv(sys.executable, [sys.executable, str(config.REPO / "bin" / "pitwall"), "install"])
 
 
 def uninstall():

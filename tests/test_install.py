@@ -85,3 +85,16 @@ class LaunchAgentTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UpdateTests(unittest.TestCase):
+    def test_update_runs_the_new_installer(self):
+        # The pull changes the files on disk, not the code already imported, so install must start afresh.
+        from unittest import mock
+        git = mock.Mock(side_effect=[mock.Mock(stdout="aaa\n"), mock.Mock(returncode=0), mock.Mock(stdout="bbb\n")])
+        with mock.patch.object(install.subprocess, "run", git), mock.patch.object(install.os, "execv") as execv, \
+                mock.patch.object(install, "install") as old_install:
+            install.update()
+        old_install.assert_not_called()
+        args = execv.call_args[0][1]
+        self.assertEqual(args[1:], [str(install.config.REPO / "bin" / "pitwall"), "install"])

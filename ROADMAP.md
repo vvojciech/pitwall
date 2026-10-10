@@ -7,23 +7,20 @@
 - `pitwall install`, `pitwall doctor`. (Mission Control was built, then removed on 2026-10-10.)
 - Agent discovery, and protection against agents nested in another agent's tab.
 - Shared memory between Claude Code and Codex.
-- Timeline, Hand off, failed commands, dev server tabs and ports.
+- Timeline, Hand off, failed commands and ports.
 - Busy port help, review loops, agent races, activity and plan usage.
-- Code map (overview and files, JavaScript, TypeScript and Python imports).
+- Code map of the work (this turn or uncommitted), following the active tab.
 - 0.1.0: one-line installer, `pitwall update`, CI on Python 3.9 and 3.13, README screenshots.
+- 0.2.0: live tests with real Claude agents for Allow, Deny, Send to Claude, Hand off and review
+  loops.
+- Removed after use: Mission Control (2026-10-10), and dev server tabs (2026-10-10: they took
+  dev servers away from the session even when the user asked for a background run).
 
 ## Verify next
 
-1. **Allow and Deny on a real prompt.** Claude draws its menu with NUL cells, which hid it from
-   Pitwall until 2026-10-10. The fix is tested on a race's trust menu, not on a permission menu.
-2. **Send to Claude and Fix with.** Detection of failed commands is tested live; typing the
-   failure into an agent is not.
-3. **Hand off and review loops.** Run one of each with real agents. The loop is tested with fakes.
-4. **Dev server tabs.** Ask Claude to start a dev server, and check that it gets its own tab and
-   that Claude reads the log.
-5. **Codex.** Approve Pitwall's hooks in Codex once (Codex asks at its next start), then check its
+1. **Codex.** Approve Pitwall's hooks in Codex once (Codex asks at its next start), then check its
    card, tab status and timeline.
-6. **Activity tooltip.** Its content is tested; its look is not, because the render tool cannot
+2. **Activity tooltip.** Its content is tested; its look is not, because the render tool cannot
    capture it.
 
 ## Next features
@@ -46,4 +43,3 @@
 - Notifications have no Allow or Deny buttons. That needs a native helper app.
 - Undo works in git repositories only.
 - Codex keeps one set of memories for all projects, so Claude gets all of them.
-- Dev server tabs work for Claude only. Codex has no way to refuse a command with a reason.

@@ -1,9 +1,8 @@
-"""Timeline, hand-off, failed commands, ports and dev server tabs: the daemon's extra routes."""
+"""Timeline, hand-off, failed commands and ports: the daemon's extra routes."""
 from __future__ import annotations
 
 import asyncio
 import os
-import shlex
 import signal
 import subprocess
 import time
@@ -13,12 +12,10 @@ from pathlib import Path
 import iterm2
 
 from pitwall import config, handoff, mapdata, ports, snapshot, timeline, usage
-from pitwall.devserver import log_path
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
 from pitwall.snapshot import repo_root, same_project
-from pitwall.state import is_shell
 
 HANDOFFS = config.HOME / "handoffs"
 IGNORED_EXITS = (0, 130, 141, 143)  # success, Ctrl+C, broken pipe, terminated
@@ -35,7 +32,6 @@ class Features:
         self.d, self.conn = daemon, connection
         self.failures = deque(maxlen=8)
         self.next_id = 1
-        self.dev_tabs = {}  # (cwd, command) -> (session id, log path) of a dev server tab
         self.loops = Loops(self)
         self.races = Races(self)
 
@@ -122,8 +118,6 @@ class Features:
             return reply(200, {"ok": True})
         if path.startswith("/api/failures/"):
             return await self.failure_route(path, data)
-        if path == "/api/devserver":
-            return reply(200, await self.dev_server(data))
         s = self.d.sessions.get(data.get("sid") or query.get("sid", ""))
         if path.startswith("/api/loop/"):
             return await self.loop_route(path, s, data)
@@ -200,24 +194,3 @@ class Features:
             await self.launch(f["pane"], to, f["cwd"] or str(Path.home()), handoff.failure_message(f), "fix")
         self.failures.remove(f)
         return reply(200, {"ok": True})
-
-    # Dev server tabs -----------------------------------------------------------------------
-
-    async def dev_server(self, data):
-        """Run an agent's dev server in a new tab beside its pane. Returns the log path for the agent."""
-        near = self.d.app.get_session_by_id(data.get("sid", ""))
-        window = near.window if near else self.d.app.current_terminal_window
-        cwd, command = data["cwd"], data["command"].rstrip("& ")
-        known = self.dev_tabs.get((cwd, command))
-        pane = known and self.d.app.get_session_by_id(known[0])
-        if pane and not is_shell(await pane.async_get_variable("jobName")):  # still running: no second copy
-            return {"log": known[1], "reused": True}
-        log = await asyncio.to_thread(log_path, cwd, time.strftime("%Y%m%d-%H%M%S"))
-        tab = await window.async_create_tab()
-        await tab.async_set_title(f"dev: {os.path.basename(cwd)}")
-        await tab.current_session.async_send_text(
-            f"cd {shlex.quote(cwd)} && {command} 2>&1 | tee {shlex.quote(str(log))}\r")
-        self.dev_tabs[(cwd, command)] = (tab.current_session.session_id, str(log))
-        if near:
-            await near.async_activate(select_tab=True, order_window_front=False)
-        return {"log": str(log)}

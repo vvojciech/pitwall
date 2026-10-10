@@ -52,11 +52,6 @@ this for Ghostty.
   project, or start one to fix it.
 - **Busy ports.** When a port is taken, the panel names the process that holds it, with a
   button to stop it.
-- **Dev server tabs.** When Claude starts a dev server in the foreground, where it would block the
-  turn, Pitwall runs it in its own tab instead, and never starts a second copy. A server that
-  Claude starts in the background stays a background task of the session. Pitwall's tab
-  keeps running after the turn. Claude gets the path of the log, which is in `.pitwall/` inside
-  the project. Pitwall hides that folder from git with the repository's local exclude file.
 
 **Know your usage**
 
@@ -112,14 +107,14 @@ Then:
 | Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
 | Keeps state, logs and caches in `~/.pitwall/`. | Delete the folder |
 
-Settings: `PITWALL_SHARED_MEMORY=0` turns off shared memory, and `PITWALL_DEV_TABS=0` turns off
-dev server tabs. Set them in the environment that starts your agents.
+Settings: `PITWALL_SHARED_MEMORY=0` turns off shared memory. Set it in the environment that
+starts your agents.
 
 ## How it works
 
 1. Claude Code and Codex run `pitwall hook <agent> <event>` on each hook event. The hook reads
    `ITERM_SESSION_ID` to know its pane, sends the event to the service and exits. It never
-   blocks or fails the agent, and it prints only the shared memory and the dev server notice.
+   blocks or fails the agent, and it prints nothing but the shared memory at session start.
 2. The service holds the agent state, serves the panel on `127.0.0.1`, and acts on iTerm2
    through its Python API: tab colours, keyboard focus, screen reads and keystrokes.
 3. The panel is a web page that iTerm2 shows in its toolbelt. It asks the service for the

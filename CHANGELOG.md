@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 (2026-10-10)
+
+- Removed: dev server tabs. Pitwall no longer takes a dev server away from the session; Claude
+  runs it as it chooses, normally as a background task, which the card lists. The
+  `PITWALL_DEV_TABS` setting is gone.
+- Changed: the "finished" tab colour is a very dark green, so it does not shout.
+
 ## 0.2.0 (2026-10-10)
 
 - The code map shows the work, not the whole project: "This turn" (files read, edited, or changed

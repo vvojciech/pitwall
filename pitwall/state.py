@@ -76,7 +76,7 @@ def apply(sessions, event):
 
     if name == "UserPromptSubmit":
         s.update(state="working", task=event.get("task") or s["task"], started=event["ts"],
-                 finished=None, action=None, permission=None, error=None, redo=None)
+                 finished=None, action=None, permission=None, error=None, redo=None, touched={}, current=None)
         if event.get("snapshot"):
             s["snapshots"].append(dict(event["snapshot"], task=s["task"], ts=event["ts"]))
             del s["snapshots"][:-MAX_SNAPSHOTS]
@@ -84,6 +84,11 @@ def apply(sessions, event):
         if s["state"] != "done":  # a late sub-agent event must not revive a finished turn
             s.update(state="working", permission=None)
         s["action"] = event.get("action") or s["action"]
+        touched = s.setdefault("touched", {})
+        for path in event.get("paths") or ([event["path"]] if event.get("path") else []):
+            if event["touch"] == "edit" or path not in touched:  # an edit outranks a read
+                touched[path] = event["touch"]
+            s["current"] = path
     elif name == "PermissionRequest":
         s.update(state="waiting_permission", permission=event.get("action"))
     elif name == "Notification":

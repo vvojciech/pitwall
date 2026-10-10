@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 # Tool inputs that best name what a tool call does, in order of preference.
 TARGET_KEYS = ("file_path", "path", "notebook_path", "command", "pattern", "url", "query", "description")
@@ -26,6 +27,24 @@ def describe(tool, tool_input):
     return tool
 
 
+READ_TOOLS = {"Read", "NotebookRead"}
+EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
+
+
+def touched_files(tool, tool_input, cwd):
+    """For the code map: {path, touch} for a file tool, {paths, touch} for a Codex patch, else {}."""
+    tool_input = tool_input if isinstance(tool_input, dict) else {}
+    if tool in READ_TOOLS or tool in EDIT_TOOLS:
+        path = tool_input.get("file_path") or tool_input.get("notebook_path")
+        return {"path": path, "touch": "edit" if tool in EDIT_TOOLS else "read"} if path else {}
+    if tool == "apply_patch":
+        text = " ".join(v for v in tool_input.values() if isinstance(v, str))
+        paths = [os.path.join(cwd or "", p.strip()) for p in PATCH_FILE.findall(text)]
+        return {"paths": paths, "touch": "edit"} if paths else {}
+    return {}
+
+
 def to_event(agent, name, payload, env, ts):
     """Return the event dict, or None when the agent does not run in iTerm2."""
     iterm_id = env.get("ITERM_SESSION_ID", "")
@@ -47,6 +66,7 @@ def to_event(agent, name, payload, env, ts):
     tool = payload.get("tool_name")
     if tool:
         event["action"] = describe(tool, payload.get("tool_input"))
+        event.update(touched_files(tool, payload.get("tool_input"), event["cwd"]))
     if name == "Notification":
         event["notification_type"] = payload.get("notification_type")
         event["message"] = first_line(payload.get("message"))

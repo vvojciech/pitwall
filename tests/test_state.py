@@ -24,6 +24,18 @@ class EventTests(unittest.TestCase):
     def test_a_system_notification_is_not_a_task(self):
         self.assertIsNone(ev("UserPromptSubmit", {"prompt": "<task-notification>\n<task-id>x</task-id>"})["task"])
 
+    def test_tool_events_carry_the_full_path_and_kind(self):
+        e = ev("PostToolUse", {"tool_name": "Edit", "tool_input": {"file_path": "/a/src/app.ts"}})
+        self.assertEqual((e["path"], e["touch"]), ("/a/src/app.ts", "edit"))
+        e = ev("PreToolUse", {"tool_name": "Read", "tool_input": {"file_path": "/a/README.md"}})
+        self.assertEqual(e["touch"], "read")
+        self.assertNotIn("path", ev("PreToolUse", {"tool_name": "Bash", "tool_input": {"command": "ls"}}))
+
+    def test_codex_patches_name_their_files(self):
+        e = ev("PreToolUse", {"tool_name": "apply_patch", "cwd": "/w",
+                              "tool_input": {"input": "*** Update File: src/a.ts\n*** Add File: src/b.ts\n"}}, agent="codex")
+        self.assertEqual((e["paths"], e["touch"]), (["/w/src/a.ts", "/w/src/b.ts"], "edit"))
+
     def test_tool_action_names_the_file(self):
         e = ev("PreToolUse", {"tool_name": "Edit", "tool_input": {"file_path": "/a/b/app.ts"}})
         self.assertEqual(e["action"], "Edit app.ts")
@@ -87,6 +99,15 @@ class StateTests(unittest.TestCase):
         )["ABC-123"]
         self.assertEqual([x["tree"] for x in s["snapshots"]], ["t1", "t2"])
         self.assertEqual(s["snapshots"][0]["task"], "one")
+
+    def test_touched_files_reset_each_turn_and_edit_wins_over_read(self):
+        read = {"tool_name": "Read", "tool_input": {"file_path": "/a/x.ts"}}
+        edit = {"tool_name": "Edit", "tool_input": {"file_path": "/a/x.ts"}}
+        s = self.run_events(ev("UserPromptSubmit", {"prompt": "one"}), ev("PreToolUse", read),
+                            ev("PostToolUse", edit), ev("PreToolUse", read))["ABC-123"]
+        self.assertEqual((s["touched"], s["current"]), ({"/a/x.ts": "edit"}, "/a/x.ts"))
+        apply({"ABC-123": s}, ev("UserPromptSubmit", {"prompt": "two"}))
+        self.assertEqual((s["touched"], s["current"]), ({}, None))
 
     def test_a_new_agent_in_the_pane_replaces_the_card(self):
         sessions = self.run_events(ev("UserPromptSubmit", {"prompt": "x"}))

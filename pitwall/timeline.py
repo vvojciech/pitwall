@@ -2,15 +2,13 @@
 from __future__ import annotations
 
 import json
-import re
 from collections import deque
 from pathlib import Path
 
-from pitwall.events import describe, first_line
+from pitwall.events import PATCH_FILE, describe, first_line
 from pitwall.memory import slug
 
 AGENT_TOOLS = ("Task", "Agent")
-PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
 
 
 def _item(kind, text, ts=None):

@@ -166,6 +166,9 @@ async function featureAct(sid, name, button) {
     toast(`${AGENT[l.reviewer]} is starting in a new split to review this work.`);
   } else if (["loop-send", "loop-stop", "loop-close"].includes(name)) {
     await api(`/api/loop/${name.slice(5)}`, { sid });
+  } else if (name === "sched-stop") {
+    await api("/api/schedule/stop", { sid, id: button.dataset.id });
+    toast("Asked Claude to cancel it. The row goes when Claude confirms.");
   } else if (name === "handoff-go") {
     const h = ui.handoff[sid];
     await api("/api/handoff", { sid, to: h.to, text: h.text });

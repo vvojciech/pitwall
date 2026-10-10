@@ -12,6 +12,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from pitwall.codemap import build  # noqa: E402
+from pitwall.schedules import view  # noqa: E402
 
 WEB = os.path.join(ROOT, "pitwall", "web")
 NOW = time.time()
@@ -34,13 +35,20 @@ def card(sid, cwd, agent, state, task, action=None, ago=0, done=None, **kw):
 
 SESSIONS = [
     card("1", SHOP, "claude", "waiting_permission", "Show the cart total with tax and shipping", "Edit CartSummary.tsx",
-         252, permission="Bash npm run db:migrate", focused=True),
+         252, permission="Bash npm run db:migrate", focused=True,
+         schedules=view({"schedules": {"r1": {"id": "r1", "schedule": time.strftime("%M %H %d %m *", time.localtime(NOW + 5520)),
+                                              "recurring": False, "prompt": "Remind me to check the staging migration",
+                                              "first_seen": NOW - 60}}}, NOW)),
     card("2", "/Users/demo/code/billing-api", "codex", "working", "Retry failed webhooks with backoff", "Edit webhooks.ts", 75,
          name="Webhooks"),
     card("3", "/Users/demo/code/docs-site", "claude", "done", "Write the upgrade guide for v3", None, 900, 140, unseen=True,
          background=[{"type": "shell", "status": "running", "description": "Docs dev server", "command": "npm run dev"},
                      {"type": "subagent", "status": "running", "description": "Check every link in the guide"}],
-         crons=1,
+         schedules=view({"schedules": {
+             "w1": {"id": "w1", "schedule": "0 0 1 1 *", "recurring": False, "prompt": "/loop check the deploy finished",
+                    "at": NOW + 262, "reason": "Vercel builds take about four minutes"},
+             "c1": {"id": "c1", "schedule": "7 3 * * *", "recurring": True, "prompt": "Re-run the link checker",
+                    "human": "Every day at 3:07 AM", "first_seen": NOW - 6.8 * 86400}}}, NOW),
          loop={"reviewer": "2", "reviewer_agent": "codex", "round": 1, "max": 3, "auto": False, "phase": "fixing",
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]

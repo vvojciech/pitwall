@@ -29,19 +29,45 @@ function contextRing(s) {
     <circle class="fill" cx="9" cy="9" r="${r}" stroke-dasharray="${(length * used / 100).toFixed(2)} ${length.toFixed(2)}" transform="rotate(-90 9 9)"/></svg></span>`;
 }
 
-// Background work Claude Code reported at its last stop: shells, sub-agents, monitors, wake-ups.
+// When a scheduled job fires next: "in 4m", "in 2h 05m", then a clock time. Ticks with the page.
+function until(ts) {
+  const s = Math.floor(ts - Date.now() / 1000 - ui.offset);
+  if (s <= 0) return "due";
+  if (s < 60) return `in ${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `in ${m}m`;
+  if (m < 360) return `in ${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+  const at = new Date((ts - ui.offset) * 1000);
+  const clock = at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return s < 86400 ? clock : `${at.toLocaleDateString([], { weekday: "short" })} ${clock}`;
+}
+
+function scheduleRow(j) {
+  const ends = j.expires && j.expires - Date.now() / 1000 - ui.offset;
+  const tip = [j.human && `Schedule: ${j.human}`, j.reason && `Why: ${j.reason}`,
+    j.expires && `Claude Code deletes it ${new Date((j.expires - ui.offset) * 1000).toLocaleString()}`].filter(Boolean).join("\n");
+  const when = j.stopping ? `<span class="sched-when muted">stopping</span>`
+    : j.next ? `<span class="sched-when" data-until="${j.next}">${until(j.next)}</span>` : `<span class="sched-when muted">${esc(j.human)}</span>`;
+  const expiring = ends != null && ends < 86400 ? `<span class="sched-ends">ends in ${since(Date.now() / 1000 + ui.offset - ends)}</span>` : "";
+  return `<li class="sched ${esc(j.kind)}" title="${esc(tip)}"><span class="bg-type">${esc(j.kind)}</span>
+    <span class="bg-desc">${esc(j.text)}${expiring}</span>${when}
+    <button class="sched-stop" data-act="sched-stop" data-id="${esc(j.id)}" aria-label="Stop this scheduled job"
+      title="Stop this scheduled job"${j.stopping ? " disabled" : ""}>${ICON.x}</button></li>`;
+}
+
+// Background work Claude Code reported at its last stop (shells, sub-agents, monitors), then its scheduled prompts.
 const BG_SHOWN = 3;
 function backgroundList(s) {
   const tasks = s.background || [];
-  const crons = s.crons || 0;
-  if (!tasks.length && !crons) return "";
+  const jobs = s.schedules || [];
+  if (!tasks.length && !jobs.length) return "";
   const row = (type, text, status) => `<li><span class="bg-type">${esc(type)}</span>
     <span class="bg-desc">${esc(text)}</span>${status ? `<span class="bg-status">${esc(status)}</span>` : ""}</li>`;
   let rows = tasks.slice(0, BG_SHOWN).map((t) => row(t.type || "task", t.description || t.command || "", t.status)).join("");
   if (tasks.length > BG_SHOWN) rows += `<li class="bg-more">and ${tasks.length - BG_SHOWN} more</li>`;
-  if (crons) rows += row("wake-up", `${crons} scheduled`, "");
+  rows += jobs.map(scheduleRow).join("");
   const all = tasks.map((t) => `${t.type}: ${t.description || t.command} (${t.status})`).join("\n");
-  return `<ul class="bg" title="${esc(all)}">${rows}</ul>`;
+  return `<ul class="bg"${all ? ` title="${esc(all)}"` : ""}>${rows}</ul>`;
 }
 
 // Your name for the card, else the iTerm2 tab's own name, else the project folder.

@@ -115,6 +115,34 @@ def apply(s, event):
                 del jobs[key]
 
 
+MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+
+
+def describe(expr):
+    """Plain words for the common cron shapes. Claude Code's own label is raw for one-shot jobs."""
+    parts = (expr or "").split()
+    if len(parts) != 5 or not parse(expr):
+        return expr or ""
+    minute, hour, day, month, weekday = parts
+    num = str.isdigit
+    if parts == ["*"] * 5:
+        return "Every minute"
+    if minute.startswith("*/") and parts[1:] == ["*"] * 4:
+        return f"Every {minute[2:]} minutes"
+    if num(minute) and parts[1:] == ["*"] * 4:
+        return f"Every hour at :{int(minute):02d}"
+    if not (num(minute) and num(hour)):
+        return expr
+    clock = f"{int(hour):02d}:{int(minute):02d}"
+    if (day, month, weekday) == ("*", "*", "*"):
+        return f"Every day at {clock}"
+    if (day, month, weekday) == ("*", "*", "1-5"):
+        return f"Weekdays at {clock}"
+    if num(day) and num(month) and weekday == "*":
+        return f"Once, {int(day)} {MONTHS[int(month) - 1]} at {clock}"
+    return expr
+
+
 def stop_message(job):
     """What Pitwall types into the tab to stop a job. Claude Code has no outside API for it."""
     text = f"Cancel the scheduled job {job['id']} with CronDelete."
@@ -129,8 +157,11 @@ def _row(job, now):
     kind = "loop" if loop else "repeats" if job.get("recurring") else "once"
     nxt = job.get("at") or next_fire(job.get("schedule"), max(job.get("first_seen") or 0,
                                                               job.get("last_fired") or 0, now - GRACE))
+    schedule = job.get("schedule") or ""
+    human = "One wake-up, timed by Claude" if job.get("at") else \
+        job["human"] if job.get("human") and job["human"] != schedule else describe(schedule)
     return {"id": job["id"], "kind": kind, "text": prompt[len("/loop"):].strip() if loop else prompt,
-            "next": nxt, "human": job.get("human") or job.get("schedule") or "", "reason": job.get("reason"),
+            "next": nxt, "human": human, "reason": job.get("reason"),
             "expires": (job.get("first_seen") or now) + EXPIRY if job.get("recurring") else None,
             "stopping": bool(job.get("stopping"))}
 

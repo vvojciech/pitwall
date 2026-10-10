@@ -340,6 +340,19 @@ body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }
 .bg-desc { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .bg-status { color: var(--blue); font-size: 10.5px; }
 .bg-more { color: var(--faint); display: block !important; }
+/* Scheduled prompts: /loop wake-ups, repeating jobs, reminders */
+.bg li.sched { grid-template-columns: 58px 1fr auto 18px; align-items: center; }
+.sched.loop .bg-type { color: var(--blue); }
+.sched-when { color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sched-when.due { color: var(--amber); font-weight: 600; }
+.sched-when.muted { color: var(--faint); }
+.sched-ends { margin-left: 6px; color: var(--amber); font-size: 10px; }
+.sched-stop { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 5px;
+  background: none; color: var(--faint); cursor: pointer; opacity: .55; }
+.sched-stop svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 2.4; fill: none; }
+.sched:hover .sched-stop, .sched-stop:focus-visible { opacity: 1; }
+.sched-stop:hover { color: var(--red); background: var(--red-bg); }
+.sched-stop:disabled { visibility: hidden; }
 .order .bgcount { margin-left: auto; color: var(--blue); font-size: 10.5px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
 
 /* Context ring in the card head */

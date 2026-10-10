@@ -107,6 +107,23 @@ class ViewTests(unittest.TestCase):
         self.assertTrue(view(session(job("a", "0 * * * *", stopping=True)), self.NOW)[0]["stopping"])
 
 
+class DescribeTests(unittest.TestCase):
+    def test_common_shapes(self):
+        from pitwall.schedules import describe
+        self.assertEqual(describe("*/5 * * * *"), "Every 5 minutes")
+        self.assertEqual(describe("* * * * *"), "Every minute")
+        self.assertEqual(describe("7 * * * *"), "Every hour at :07")
+        self.assertEqual(describe("7 3 * * *"), "Every day at 03:07")
+        self.assertEqual(describe("57 8 * * 1-5"), "Weekdays at 08:57")
+        self.assertEqual(describe("13 4 11 10 *"), "Once, 11 Oct at 04:13")
+        self.assertEqual(describe("0 9 * * 1"), "0 9 * * 1")  # anything else stays as written
+
+    def test_rows_use_it_and_wakeups_say_who_timed_them(self):
+        rows = view(session(job("a", "7 3 * * *"), job("w", "1 0 1 1 *", "/loop x", recurring=False, at=1.0)), 0)
+        self.assertEqual({r["id"]: r["human"] for r in rows}, {"a": "Every day at 03:07", "w": "One wake-up, timed by Claude"})
+        self.assertEqual(view(session(job("b", "7 3 * * *", human="Daily, 3:07 AM")), 0)[0]["human"], "Daily, 3:07 AM")
+
+
 class StopMessageTests(unittest.TestCase):
     def test_a_job_is_deleted_by_id(self):
         text = stop_message(job("a3ecd9af", "7 3 * * *", "nightly check"))

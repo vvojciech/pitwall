@@ -229,6 +229,12 @@ class StateTests(unittest.TestCase):
         apply(sessions, ev("PostToolUse", {"tool_name": "ScheduleWakeup", "tool_input": {"stop": True}}))
         self.assertEqual(s["schedules"], {})
 
+    def test_an_older_hook_does_not_break_the_event(self):  # during an update the hook can be the old version
+        old = ev("Stop")
+        old["crons"] = 2
+        s = self.run_events(ev("UserPromptSubmit", {"prompt": "x"}), old)["ABC-123"]
+        self.assertEqual((s["state"], s["schedules"]), ("done", {}))
+
     def test_stopping_marks_the_job_until_the_report(self):
         jobs = [{"id": "a", "schedule": "0 * * * *", "recurring": True, "prompt": "x"}]
         sessions = self.run_events(ev("Stop", {"session_crons": jobs}))

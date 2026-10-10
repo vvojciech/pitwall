@@ -89,7 +89,7 @@ def _time_wakeup(s):
 def apply(s, event):
     """Update the session's jobs from one event. The list at each Stop is the authority."""
     jobs, ts = s.setdefault("schedules", {}), event["ts"]
-    if "crons" in event:
+    if isinstance(event.get("crons"), list):  # hooks before 0.7 sent a count
         jobs = s["schedules"] = {c["id"]: dict(jobs.get(c["id"], {}), **c) for c in event["crons"]}
     if event.get("cron_add"):
         job = event["cron_add"]

@@ -35,19 +35,15 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 **Allow or Deny** a permission prompt from the card. The agent keeps going in its own tab.
 
-**Answer Claude's questions** on the card. One click for a single choice. Pick several and press
-Send for the rest.
+**Answer Claude's questions** on the card. One click for a single choice. Pick several and press Send for the rest.
 
-**Undo a turn.** Pitwall takes a snapshot before every prompt. If a turn goes wrong, see the
-files it touched and put them back. Changed your mind? Redo.
+**Undo a turn.** Pitwall takes a snapshot before every prompt. If a turn goes wrong, see the files it touched and put them back. Changed your mind? Redo.
 
 **Hand off** a task with its diff and failed commands to a fresh Claude or Codex.
 
-**Review loops.** A second agent reviews the first one's work, round after round, until it
-says APPROVED.
+**Review loops.** A second agent reviews the first one's work, round after round, until it says APPROVED.
 
-**Agent races.** Give one task to several agents, each in its own git worktree, and keep the
-best diff.
+**Agent races.** Give one task to several agents, each in its own git worktree, and keep the best diff.
 
 </td>
 </tr>
@@ -59,21 +55,17 @@ best diff.
 
 ### See what each agent is doing
 
-**One card per agent**, in tab order or with the ones that need you first. State, task, last
-action and a timer. Click a card to jump to that pane.
+**One card per agent**, in tab order or with the ones that need you first. State, task, last action and a timer. Click a card to jump to that pane.
 
-**Tab colours.** A tab turns dark amber when its agent waits for you, dark green when it
-finishes and dark red when it fails.
+**Tab colours.** A tab turns dark amber when its agent waits for you, dark green when it finishes and dark red when it fails.
 
 **Context ring.** How full each agent's context window is, amber from 80%, red from 90%.
 
 **Background work.** Shells, sub-agents and monitors that still run after a turn ends.
 
-**Code map** of the active tab's work: files read, files edited, the file it is on now, and the
-files that import an edit, with a warning when no test covers it.
+**Code map** of the active tab's work: files read, files edited, the file it is on now, and the files that import an edit, with a warning when no test covers it.
 
-**Plan limits** for Claude and ChatGPT, pinned to the bottom, and an activity page with time,
-prompts and tokens per day and per project.
+**Plan limits** for Claude and ChatGPT, pinned to the bottom, and an activity page with time, prompts and tokens per day and per project.
 
 </td>
 <td width="42%"><img src="docs/images/map.png" alt="The code map: the edited files cart.ts, CartSummary.tsx and route.ts, the files that import them, and a warning that two edits have no test that imports them"></td>

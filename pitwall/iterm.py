@@ -82,9 +82,11 @@ async def focus(app, session):
     """
     await app.async_activate(raise_all_windows=False, ignoring_other_apps=True)
     tab, window = session.tab, session.window
-    if tab and window and window.current_tab is tab and tab.current_session is session:
-        sibling = next((s for s in tab.sessions if s is not session), None)
-        other_tab = next((t for t in window.tabs if t is not tab), None)
+    current_tab = window and window.current_tab
+    current = tab and tab.current_session
+    if current_tab and current and current_tab.tab_id == tab.tab_id and current.session_id == session.session_id:
+        sibling = next((s for s in tab.sessions if s.session_id != session.session_id), None)
+        other_tab = next((t for t in window.tabs if t.tab_id != tab.tab_id), None)
         if sibling:
             await sibling.async_activate(select_tab=True, order_window_front=True)
         elif other_tab:

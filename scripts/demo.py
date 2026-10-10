@@ -44,8 +44,16 @@ SESSIONS = [
          loop={"reviewer": "2", "reviewer_agent": "codex", "round": 1, "max": 3, "auto": False, "phase": "fixing",
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]
+SESSIONS.insert(2, card("4", "/Users/demo/code/mobile", "claude", "waiting_input", "Add dark mode to the settings screen",
+                       "AskUserQuestion", 40, questions=[
+    {"question": "Which screens get dark mode first?", "header": "Scope", "multi": True, "options": [
+        {"label": "Settings", "description": "The screen in the prompt"},
+        {"label": "Home", "description": ""}, {"label": "Checkout", "description": "Has the most custom colours"}]},
+    {"question": "Follow the system setting, or add a switch?", "header": "Control", "multi": False, "options": [
+        {"label": "Follow the system (Recommended)", "description": "No new setting to explain"},
+        {"label": "Add a switch", "description": "Light, dark or system, in Settings"}]}]))
 SESSIONS.append(SESSIONS.pop(0))  # tab order: the waiting agent is in the last tab
-CONTEXT = {"1": (34, 200000), "2": (83, 258400), "3": (94, 1000000)}  # one of each ring colour
+CONTEXT = {"4": (12, 200000), "1": (34, 200000), "2": (83, 258400), "3": (94, 1000000)}  # one of each ring colour
 for c in SESSIONS:
     used, size = CONTEXT[c["sid"]]
     c["context"] = {"used": used, "size": size, "tokens": size * used // 100}

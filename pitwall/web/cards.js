@@ -89,3 +89,44 @@ $("cards").addEventListener("keydown", (e) => {
 $("cards").addEventListener("focusout", (e) => { if (e.target.dataset.rename) finishRename(e.target, true); });
 $("order").addEventListener("click", (e) => { const b = e.target.closest("[data-order]"); if (b) setOrder(b.dataset.order); });
 try { setOrder(localStorage.getItem("pitwall.order")); } catch { setOrder("tabs"); }
+
+// Claude's AskUserQuestion menu, answered from the card. One single-choice question sends on click;
+// otherwise the picks collect until Send. "Type something" and "Chat about this" stay in the tab.
+function picksFor(s) {
+  const key = JSON.stringify(s.questions.map((q) => q.question));
+  ui.picks ||= {};
+  if (ui.picks[s.sid]?.key !== key) ui.picks[s.sid] = { key, picks: s.questions.map(() => []) };
+  return ui.picks[s.sid].picks;
+}
+
+const oneClick = (s) => s.questions.length === 1 && !s.questions[0].multi;
+
+function questionPanel(s, busy) {
+  const picks = picksFor(s);
+  const blocks = s.questions.map((q, qi) => `<div class="q">
+    ${q.header ? `<div class="q-head">${esc(q.header)}${q.multi ? '<span>Pick any</span>' : ""}</div>` : ""}
+    <p>${esc(q.question)}</p>
+    <div class="opts" role="${q.multi ? "group" : "radiogroup"}">${q.options.map((o, oi) => {
+      const on = picks[qi].includes(oi);
+      return `<button class="opt${on ? " on" : ""}" data-act="pick" data-q="${qi}" data-o="${oi}" aria-pressed="${on}" ${busy}>
+        <b>${esc(o.label)}</b>${o.description ? `<small>${esc(o.description)}</small>` : ""}</button>`;
+    }).join("")}</div></div>`).join("");
+  const ready = picks.every((p) => p.length);
+  const send = oneClick(s) ? "" : `<div class="row"><button class="btn primary" data-act="answer" ${ready && !busy ? "" : "disabled"}>
+    ${ICON.check}Send ${s.questions.length > 1 ? "answers" : "answer"}</button></div>`;
+  return `<div class="ask questions" data-stop>${blocks}${send}
+    <div class="hint">To type your own answer, open the tab.</div></div>`;
+}
+
+// Returns true when the click should send the answers now.
+function pick(s, button) {
+  const picks = picksFor(s), qi = +button.dataset.q, oi = +button.dataset.o;
+  const chosen = picks[qi];
+  if (s.questions[qi].multi) {
+    const at = chosen.indexOf(oi);
+    if (at >= 0) chosen.splice(at, 1); else chosen.push(oi);
+  } else {
+    picks[qi] = [oi];
+  }
+  return oneClick(s);
+}

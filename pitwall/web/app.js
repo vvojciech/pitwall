@@ -88,8 +88,8 @@ function card(s) {
   const waiting = s.state === "waiting_permission";
   const text = taskText(s);
   const task = text ? `<div class="task">${esc(text)}</div>` : `<div class="task empty">No task yet</div>`;
-  const action = s.action && s.state !== "done" ? `<div class="action">${esc(s.action)}</div>` : "";
-  const ask = waiting ? `<div class="ask" data-stop>
+  const action = s.action && s.state !== "done" && !s.questions ? `<div class="action">${esc(s.action)}</div>` : "";
+  const ask = s.questions ? questionPanel(s, busy) : waiting ? `<div class="ask" data-stop>
       ${s.permission ? `<div class="what">${esc(s.permission)}</div>` : ""}
       <div class="row"><button class="btn primary" data-act="allow" ${busy}>${ICON.check}Allow</button>
       <button class="btn" data-act="deny" ${busy}>${ICON.x}Deny</button></div></div>` : "";
@@ -98,7 +98,7 @@ function card(s) {
     <div class="head"><span class="dot"></span>${cardName(s)}
       <span class="timer" ${timerAttr(s)}></span>${contextRing(s)}</div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
-      <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
+      <span class="state-label">${s.questions ? "Asks you" : LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${backgroundList(s)}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
     ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}</article>`;
 }
@@ -159,11 +159,16 @@ async function poll() {
 async function act(sid, name) {
   if (name === "undo-cancel") { delete ui.undo[sid]; return render(); }
   if (name === "rename") return startRename(sid);
+  const s = ui.data?.sessions.find((x) => x.sid === sid);
+  if (name === "pick" && !(s?.questions && pick(s, ui.button))) return render();
   ui.pending[sid] = true;
   render();
   try {
     if (await featureAct(sid, name, ui.button)) {
       // handled in features.js
+    } else if (name === "pick" || name === "answer") {
+      await api("/api/answer", { sid, picks: picksFor(s) });
+      delete ui.picks[sid];
     } else if (name === "allow" || name === "deny") {
       await api("/api/respond", { sid, allow: name === "allow" });
     } else if (name === "undo") {

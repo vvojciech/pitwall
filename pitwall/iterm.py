@@ -5,15 +5,12 @@ import re
 
 import iterm2
 
+from pitwall.colours import BADGES, TAB, is_our_badge, is_our_colour
+
 # The first option of a Claude Code or Codex permission menu, with the cursor on it.
 PROMPT_READY = re.compile(r"^\s*[❯›>]\s*1\.\s*Yes", re.M)
 
-COLOURS = {
-    "waiting": iterm2.Color(232, 163, 61),
-    "done": iterm2.Color(18, 52, 32),  # very dark green: a quiet "finished" that does not shout
-    "failed": iterm2.Color(226, 86, 74),
-}
-BADGES = {"waiting_permission": "Needs you", "waiting_input": "Waiting"}
+COLOURS = {name: iterm2.Color(*rgb) for name, rgb in TAB.items()}
 
 
 def signal_for(s, unseen):
@@ -42,7 +39,14 @@ class Tabs:
             return
         if s["sid"] not in self.original:
             p = await session.async_get_profile()
-            self.original[s["sid"]] = (p.use_tab_color, p.tab_color, p.badge_text or "")
+            use, colour, badge = p.use_tab_color, p.tab_color, p.badge_text or ""
+            # A tab can still carry Pitwall's colour or badge from before a restart. That is not
+            # the user's own, so it is not what gets put back.
+            if colour is not None and is_our_colour((colour.red, colour.green, colour.blue)):
+                use, colour = False, None
+            if is_our_badge(badge):
+                badge = ""
+            self.original[s["sid"]] = (use, colour, badge)
         use, colour, badge = self.original[s["sid"]]
         change = iterm2.LocalWriteOnlyProfile()
         if want[0]:

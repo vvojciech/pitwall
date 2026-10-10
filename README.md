@@ -6,7 +6,7 @@ Watch and steer Claude Code and Codex from iTerm2. Pitwall adds a panel to the i
 that follows every agent in every tab: what it does, what it needs from you, what it changed,
 and how much of your plan it used.
 
-<p align="center"><img src="docs/images/panel.png" width="320" alt="The Pitwall panel: a failed command with the process that holds its port, an agent that waits for permission with Allow and Deny, and the code map of its turn"></p>
+<p align="center"><img src="docs/images/panel.png" width="320" alt="The Pitwall panel: an agent that waits for permission with Allow and Deny, a Codex agent at work, a finished agent with background work and a review loop, the code map of the active tab's turn, ports, and plan usage"></p>
 
 Pitwall is not a fork of iTerm2. It is a small local service that talks to iTerm2 through the
 iTerm2 Python API, and to the agents through the hooks that Claude Code and Codex already have.
@@ -53,7 +53,8 @@ this for Ghostty.
 - **Busy ports.** When a port is taken, the panel names the process that holds it, with a
   button to stop it.
 - **Dev server tabs.** When Claude starts a dev server, Pitwall runs it in its own tab, so it
-  keeps running after the turn. Claude gets the path of the log.
+  keeps running after the turn. Claude gets the path of the log, which is in `.pitwall/` inside
+  the project. Pitwall hides that folder from git with the repository's local exclude file.
 
 **Know your usage**
 

@@ -3,26 +3,15 @@ from __future__ import annotations
 
 import os
 import subprocess
-from pathlib import Path
 
-from pitwall.snapshot import _git, _write_tree
+from pitwall.snapshot import _git, _write_tree, exclude
 
 WORKTREES = ".claude/worktrees"
 
 
-def _hide_worktrees(repo):
-    """Keep the race worktrees out of `git status` with the repo's local exclude file."""
-    path = os.path.join(repo, _git(repo, "rev-parse", "--git-path", "info/exclude").strip())
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    lines = Path(path).read_text().splitlines() if os.path.exists(path) else []
-    if f"/{WORKTREES}/" not in lines:
-        with open(path, "a") as f:
-            f.write(f"\n/{WORKTREES}/\n")
-
-
 def create(repo, race_id, agents):
     """Make one worktree and branch per agent, from HEAD. Returns the entries."""
-    _hide_worktrees(repo)
+    exclude(repo, f"/{WORKTREES}/")
     base = _git(repo, "rev-parse", "HEAD^{tree}").strip()
     entries = []
     for n, agent in enumerate(agents, 1):

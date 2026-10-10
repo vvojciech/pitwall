@@ -37,6 +37,31 @@ class PortTests(unittest.TestCase):
                          [(3000, 501, "node", "shop"), (8000, 900, "python3.12", "api")])
 
 
+class DevServerLogTests(unittest.TestCase):
+    def test_the_log_is_inside_the_project_and_hidden_from_git(self):
+        import os, subprocess, tempfile
+        from pitwall.devserver import log_path
+        with tempfile.TemporaryDirectory() as tmp:
+            root = os.path.realpath(tmp)
+            subprocess.run(["git", "init", "-q", root], check=True)
+            os.makedirs(os.path.join(root, "web"))
+            log = log_path(os.path.join(root, "web"), "20261010-120000")
+            self.assertEqual(str(log), os.path.join(root, ".pitwall", "dev-web-20261010-120000.log"))
+            log.write_text("x")
+            status = subprocess.run(["git", "-C", root, "status", "--porcelain"], capture_output=True, text=True).stdout
+            self.assertEqual(status, "")
+            log_path(root, "20261010-120001")  # a second log does not add the exclude line twice
+            exclude = open(os.path.join(root, ".git", "info", "exclude")).read()
+            self.assertEqual(exclude.count("/.pitwall/"), 1)
+
+    def test_outside_git_the_log_goes_to_the_pitwall_folder(self):
+        import tempfile
+        from pitwall import config
+        from pitwall.devserver import log_path
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(log_path(tmp, "t").parent, config.HOME / "logs")
+
+
 class DevServerTests(unittest.TestCase):
     def test_dev_servers_match(self):
         for command in ("npm run dev", "pnpm dev", "cd web && yarn dev", "npx next dev -p 3001", "vite",

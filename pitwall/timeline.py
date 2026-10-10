@@ -5,7 +5,7 @@ import json
 from collections import deque
 from pathlib import Path
 
-from pitwall.events import PATCH_FILE, describe, first_line
+from pitwall.events import PATCH_FILE, describe, first_line, prompt_text
 from pitwall.memory import slug
 
 AGENT_TOOLS = ("Task", "Agent")
@@ -20,8 +20,9 @@ def _claude(record):
     message = record.get("message") or {}
     content, ts = message.get("content"), record.get("timestamp")
     if record["type"] == "user":
-        if isinstance(content, str) and not content.lstrip().startswith("<"):
-            yield _item("prompt", content, ts)
+        text = isinstance(content, str) and prompt_text(content)
+        if text:
+            yield _item("prompt", text, ts)
         return
     for block in content if isinstance(content, list) else []:
         kind = block.get("type")
@@ -56,8 +57,8 @@ def _codex(record):
     kind = p.get("type")
     if kind == "message" and p.get("role") in ("user", "assistant"):
         text = " ".join(c.get("text", "") for c in p.get("content") or [] if isinstance(c, dict))
-        if p["role"] == "user" and not text.lstrip().startswith(("<", "# AGENTS.md")):
-            yield _item("prompt", text, ts)
+        if p["role"] == "user" and prompt_text(text):
+            yield _item("prompt", prompt_text(text), ts)
         elif p["role"] == "assistant":
             yield _item("text", text, ts)
     elif kind == "reasoning":

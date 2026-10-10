@@ -60,6 +60,19 @@ def same_project(a, b):
     return bool(root) and root == (b and repo_root(b))
 
 
+def exclude(root, pattern):
+    """Hide a path from `git status` with the repository's local exclude file, once.
+
+    The local exclude file is not committed, so the project's .gitignore stays untouched.
+    """
+    path = os.path.join(root, _git(root, "rev-parse", "--git-path", "info/exclude").strip())
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    lines = open(path).read().splitlines() if os.path.exists(path) else []
+    if pattern not in lines:
+        with open(path, "a") as f:
+            f.write(f"\n{pattern}\n")
+
+
 def take(cwd):
     """Snapshot the work tree that holds cwd. Returns {root, tree}, or None outside git."""
     try:

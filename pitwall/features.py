@@ -13,13 +13,13 @@ from pathlib import Path
 import iterm2
 
 from pitwall import config, handoff, mapdata, ports, snapshot, timeline, usage
+from pitwall.devserver import log_path
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
 from pitwall.snapshot import repo_root, same_project
 
 HANDOFFS = config.HOME / "handoffs"
-LOGS = config.HOME / "logs"
 IGNORED_EXITS = (0, 130, 141, 143)  # success, Ctrl+C, broken pipe, terminated
 OUTPUT_LINES = 40
 
@@ -205,9 +205,8 @@ class Features:
         """Run an agent's dev server in a new tab beside its pane. Returns the log path for the agent."""
         near = self.d.app.get_session_by_id(data.get("sid", ""))
         window = near.window if near else self.d.app.current_terminal_window
-        LOGS.mkdir(parents=True, exist_ok=True)
         cwd, command = data["cwd"], data["command"].rstrip("& ")
-        log = LOGS / f"{os.path.basename(cwd)}-{time.strftime('%Y%m%d-%H%M%S')}.log"
+        log = await asyncio.to_thread(log_path, cwd, time.strftime("%Y%m%d-%H%M%S"))
         tab = await window.async_create_tab()
         await tab.async_set_title(f"dev: {os.path.basename(cwd)}")
         await tab.current_session.async_send_text(

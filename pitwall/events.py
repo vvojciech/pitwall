@@ -27,6 +27,22 @@ def describe(tool, tool_input):
     return tool
 
 
+PASTED = re.compile(r"<pasted_content[^>]*>(.*?)</pasted_content[^>]*>", re.S)  # the closing tag repeats the id
+# Records that agents write as "user" messages but no person typed.
+SYSTEM_TAGS = ("<task-notification", "<local-command", "<command-name", "<command-message", "<command-args",
+               "<system-reminder", "<bash-input", "<bash-stdout", "<bash-stderr", "<user-prompt-submit-hook",
+               "<environment_context", "<user_instructions", "<turn_aborted", "# AGENTS.md")
+
+
+def prompt_text(raw):
+    """What a person typed or pasted, or None for a system record.
+
+    Claude Code wraps pasted text in <pasted_content> tags; the text inside is the prompt.
+    """
+    text = PASTED.sub(lambda m: m.group(1), raw or "").strip()
+    return None if not text or text.startswith(SYSTEM_TAGS) else text
+
+
 READ_TOOLS = {"Read", "NotebookRead"}
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
@@ -71,9 +87,9 @@ def to_event(agent, name, payload, env, ts):
         "transcript": payload.get("transcript_path"),
     }
     if name == "UserPromptSubmit":
-        prompt = first_line(payload.get("prompt"))
-        # Claude Code submits background-task notifications as prompts; they are not a task.
-        event["task"] = None if prompt.startswith("<") else prompt
+        # Background-task notifications arrive as prompts too; prompt_text drops them.
+        text = prompt_text(payload.get("prompt"))
+        event["task"] = first_line(text) if text else None
     tool = payload.get("tool_name")
     if tool:
         event["action"] = describe(tool, payload.get("tool_input"))

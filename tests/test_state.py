@@ -21,6 +21,20 @@ class EventTests(unittest.TestCase):
         e = ev("UserPromptSubmit", {"prompt": "  fix the build\nmore detail"})
         self.assertEqual(e["task"], "fix the build")
 
+    def test_pasted_text_is_unwrapped(self):
+        # The closing tag repeats the id, as Claude Code writes it.
+        raw = '\n\n<pasted_content id="0435">\nThis command failed in /repo (exit 1):\n$ ls\n</pasted_content id="0435">\n'
+        self.assertEqual(ev("UserPromptSubmit", {"prompt": raw})["task"], "This command failed in /repo (exit 1):")
+
+    def test_typed_text_around_a_paste_comes_first(self):
+        raw = 'Fix this\n<pasted_content id="1">\nTraceback\n</pasted_content>'
+        self.assertEqual(ev("UserPromptSubmit", {"prompt": raw})["task"], "Fix this")
+
+    def test_prompt_text_helper(self):
+        from pitwall.events import prompt_text
+        self.assertIsNone(prompt_text("<local-command-stdout>x</local-command-stdout>"))
+        self.assertEqual(prompt_text("<b>bold</b> is html"), "<b>bold</b> is html")
+
     def test_a_system_notification_is_not_a_task(self):
         self.assertIsNone(ev("UserPromptSubmit", {"prompt": "<task-notification>\n<task-id>x</task-id>"})["task"])
 

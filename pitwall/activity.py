@@ -10,6 +10,8 @@ import os
 import re
 from datetime import datetime
 
+from pitwall.events import prompt_text
+
 IDLE_GAP = 300  # seconds; a longer pause between two records is not active time
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
@@ -67,7 +69,7 @@ def _claude(records, days):
             continue
         if r["type"] == "user":
             if isinstance(content, str):
-                typed = not content.lstrip().startswith("<")  # "<...>" records are system notes
+                typed = prompt_text(content) is not None
             else:
                 kinds = {b.get("type") for b in content or [] if isinstance(b, dict)}
                 typed = "text" in kinds and "tool_result" not in kinds
@@ -98,8 +100,8 @@ def _codex(records, days):
             continue
         kind = p.get("type")
         if r.get("type") == "response_item" and kind == "message" and p.get("role") == "user":
-            text = " ".join(c.get("text", "") for c in p.get("content") or [] if isinstance(c, dict)).lstrip()
-            if text and not text.startswith(("<", "# AGENTS.md")):
+            text = " ".join(c.get("text", "") for c in p.get("content") or [] if isinstance(c, dict))
+            if prompt_text(text):
                 row["prompts"] += 1
         elif kind in ("function_call", "custom_tool_call"):
             files = PATCH_FILE.findall(p.get("input") or "") if p.get("name") == "apply_patch" else []

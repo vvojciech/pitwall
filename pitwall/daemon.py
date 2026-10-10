@@ -41,10 +41,8 @@ class Daemon:
         self.unseen = set()
         self.focused = None
 
-    def url(self, view="sidebar"):
-        if view == "activity":
-            return f"http://127.0.0.1:{self.port}/activity?t={self.token}"
-        return f"http://127.0.0.1:{self.port}/?view={view}&t={self.token}"
+    def url(self, page=""):
+        return f"http://127.0.0.1:{self.port}/{page}?t={self.token}"
 
     def load(self):
         try:
@@ -95,9 +93,9 @@ class Daemon:
         if routed:
             return routed
         if path == "/api/state":
-            return reply(200, await self.state(query.get("screen") == "1"))
-        if path in ("/api/mission", "/api/open") and method == "POST":
-            subprocess.Popen(["open", self.url("activity" if data.get("view") == "activity" else "mission")])
+            return reply(200, await self.state())
+        if path == "/api/open" and method == "POST":  # the activity page, in the default browser
+            subprocess.Popen(["open", self.url("activity")])
             return reply(200, {"ok": True})
         s = self.sessions.get(data.get("sid") or query.get("sid", ""))
         session = s and self.app.get_session_by_id(s["sid"])
@@ -145,7 +143,7 @@ class Daemon:
         self.save()
         return reply(200, {"ok": True})
 
-    async def state(self, with_screen):
+    async def state(self):
         cards = []
         for sid, s in list(self.sessions.items()):
             session = self.app.get_session_by_id(sid)
@@ -158,8 +156,6 @@ class Daemon:
                         can_undo=bool(s["snapshots"]), can_redo=bool(s.get("redo")),
                         reviews=writer and os.path.basename(writer.get("cwd") or ""),
                         tab_name=tab and await tab.async_get_variable("titleOverride") or None)
-            if with_screen:
-                card["screen"] = await iterm.screen_text(session, 14)
             cards.append(card)
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
         return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards()}
@@ -222,15 +218,6 @@ async def main(connection):
     config.write_private(config.DAEMON_FILE, json.dumps({"port": port, "token": token, "pid": os.getpid()}))
     if os.environ.get("PITWALL_NO_TOOLBELT") != "1":  # a test daemon must not take over the panel
         await iterm2.tool.async_register_web_view_tool(connection, "Pitwall", "com.vvojciech.pitwall", False, daemon.url())
-
-    @iterm2.RPC
-    async def pitwall_mission_control():
-        subprocess.Popen(["open", daemon.url("mission")])
-
-    try:
-        await pitwall_mission_control.async_register(connection)
-    except iterm2.notifications.SubscriptionException as e:  # another daemon holds the name
-        print(f"pitwall: Mission Control key binding not registered: {e}", flush=True)
     for s in daemon.sessions.values():
         await daemon.tabs.show(s, daemon.unseen)
         daemon.status.write(s)

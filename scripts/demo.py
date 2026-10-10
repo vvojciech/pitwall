@@ -29,7 +29,7 @@ def card(sid, cwd, agent, state, task, action=None, ago=0, done=None, **kw):
     return dict({"sid": sid, "agent": agent, "agent_session": f"s{sid}", "cwd": cwd, "state": state, "task": task,
                  "action": action, "started": NOW - ago, "finished": done and NOW - done, "permission": None,
                  "error": None, "updated": NOW, "title": "", "focused": False, "unseen": False, "can_undo": True,
-                 "can_redo": False, "screen": "⏺ Running the cart tests.\n\n⏺ Bash(npm test -- cart)\n  ⎿  PASS  tests/cart.test.ts (9 tests)\n\n✻ Thinking…"}, **kw)
+                 "can_redo": False}, **kw)
 
 
 SESSIONS = [

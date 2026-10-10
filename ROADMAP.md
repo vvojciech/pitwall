@@ -4,7 +4,7 @@
 
 - Agent sidebar in the iTerm2 toolbelt, with Allow and Deny, Undo and Redo.
 - Tab colour and badge signals, and the native tab status for Codex.
-- Mission Control, `pitwall install`, `pitwall doctor`.
+- `pitwall install`, `pitwall doctor`. (Mission Control was built, then removed on 2026-10-10.)
 - Agent discovery, and protection against agents nested in another agent's tab.
 - Shared memory between Claude Code and Codex.
 - Timeline, Hand off, failed commands, dev server tabs and ports.
@@ -44,7 +44,6 @@
 
 - iTerm2 always docks the toolbelt on the right.
 - Notifications have no Allow or Deny buttons. That needs a native helper app.
-- Mission Control opens in the default browser.
 - Undo works in git repositories only.
 - Codex keeps one set of memories for all projects, so Claude gets all of them.
 - Dev server tabs work for Claude only. Codex has no way to refuse a command with a reason.

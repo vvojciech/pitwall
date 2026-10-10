@@ -36,12 +36,7 @@ button:disabled { opacity: .5; cursor: progress; }
 .icon-btn:hover { color: var(--ink); }
 
 main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.mission main { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; padding: 16px; }
-.mission body, body.mission { font-size: 13px; }
-body.mission #mission { display: none; }
-body.mission .bar { padding: 12px 18px; }
 .brand .view { display: none; color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 12px; }
-body.mission .brand .view { display: inline; }
 
 .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 10px 14px; cursor: pointer; overflow: hidden; transition: border-color .15s; }
 .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent, transparent); }
@@ -127,7 +122,6 @@ body.mission .brand .view { display: inline; }
 .loop-strip details summary { cursor: pointer; color: var(--muted); }
 .loop-strip pre { margin: 6px 0 0; padding: 6px 8px; border-radius: 6px; background: var(--term-bg); color: var(--term-ink); font: 10.5px/1.4 var(--mono); white-space: pre-wrap; max-height: 180px; overflow: auto; }
 .handoff label.check { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font-size: 11px; color: var(--ink); margin-bottom: 4px; }
-body.mission #race { display: none; }
 .race-form { margin: 0; background: var(--card); }
 .race-form select { width: 100%; height: 26px; margin-bottom: 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 11.5px; padding: 0 6px; }
 .race-form textarea { height: 76px; margin-bottom: 9px; font-family: inherit; font-size: 11.5px; }
@@ -170,10 +164,6 @@ body.mission #race { display: none; }
 .undo li { display: flex; gap: 6px; padding: 1px 0; white-space: nowrap; }
 .undo li span:first-child { width: 52px; flex: none; color: var(--faint); }
 
-.mission .card { display: flex; flex-direction: column; padding: 14px 16px 0 18px; }
-.screen { flex: 1; margin: 12px -16px 0 -18px; padding: 10px 16px 12px 18px; min-height: 16.5em; background: var(--term-bg); color: var(--term-ink); font: 11px/1.4 var(--mono); white-space: pre; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
-.hint { color: var(--faint); font-size: 11px; display: none; }
-body.mission .hint { display: block; }
 
 .empty-state { padding: 28px 14px; text-align: center; color: var(--muted); }
 .empty-state strong { display: block; color: var(--ink); margin-bottom: 4px; font-size: 13px; }
@@ -297,7 +287,6 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 /* Usage strip, pinned to the bottom of the panel */
 .usage-bar { position: sticky; bottom: 0; z-index: 2; background: var(--bg); border-top: 1px solid var(--line); padding: 7px 12px 8px; display: grid; gap: 4px; font-size: 11px; }
 .usage-bar:empty { display: none; }
-body.mission .usage-bar { display: none; }
 .urow { display: grid; grid-template-columns: 52px 1fr 1fr; align-items: center; gap: 10px; min-width: 0; }
 .urow .agent { color: var(--ink); font-size: 11px; }
 .mm { display: grid; grid-template-columns: 16px 1fr 30px; align-items: center; gap: 5px; min-width: 0; }
@@ -319,4 +308,7 @@ body.mission .usage-bar { display: none; }
 .order > span { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
 .order .seg { flex: 1; margin: 0; max-width: 220px; }
 .order .seg button { height: 22px; }
-body.mission .order { flex-basis: auto; margin-left: 12px; }
+
+/* The panel is a full-height column, so the usage strip sits at the bottom even with few cards. */
+body:not(.activity-page) { display: flex; flex-direction: column; min-height: 100vh; }
+body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }

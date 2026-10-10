@@ -8,7 +8,6 @@ The first release.
   timer, and a click that gives the agent's pane keyboard focus.
 - Allow and Deny for permission prompts, sent only when the prompt is on screen.
 - Tab colour and badge signals; the native iTerm2 tab status for Codex.
-- Mission Control: every agent with the end of its terminal, on one page.
 - Undo and Redo for an agent's turn, from git tree snapshots.
 - Code map: folders by type, files read and edited this turn, the blast radius of an edit.
 - Timeline, Hand off, review loops and agent races.
@@ -16,5 +15,5 @@ The first release.
 - Failed commands with "Send to Claude" and "Fix with"; busy port help.
 - Dev server tabs and a ports list.
 - Activity page and plan limit meters for Claude and Codex.
-- `pitwall install`, `update`, `uninstall`, `doctor`, `mission`, `activity`, and a one-line
+- `pitwall install`, `update`, `uninstall`, `doctor`, `activity`, and a one-line
   installer.

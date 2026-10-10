@@ -24,7 +24,6 @@ this for Ghostty.
   takes the same name. Plan usage stays pinned to the bottom of the panel.
 - **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
   finishes or fails, until you look at it.
-- **Mission Control.** Every agent on one page, with the end of each terminal.
 - **Code map.** The project as a star map: folders by type, the files the agent read and edited
   this turn, the file it works on now, and the files that import an edit.
 - **Timeline.** The agent's prompts, thinking, replies, tool calls and sub-agents.
@@ -55,8 +54,6 @@ this for Ghostty.
 
 - **Plan limits.** The 5-hour and weekly limits of your Claude and ChatGPT plans.
 - **Activity.** Agent time, prompts, files, commands and tokens per day and per project.
-
-<p align="center"><img src="docs/images/mission-control.png" alt="Mission Control: three agents with their state, task and the end of their terminal"></p>
 
 <p align="center"><img src="docs/images/activity.png" alt="The activity page: totals, agent time per day for Claude and Codex, plan limits and projects"></p>
 
@@ -93,12 +90,8 @@ Then:
 | `pitwall install` | Make the venv, add the hooks, start the service |
 | `pitwall update` | Pull the newest version and install it again |
 | `pitwall doctor` | Check each part of the setup and say how to fix it |
-| `pitwall mission` | Open Mission Control |
 | `pitwall activity` | Open the activity page |
 | `pitwall uninstall` | Remove the hooks and the status line wrapper, and stop the service |
-
-To open Mission Control from a key, open iTerm2 **Settings > Keys > Key Bindings**, add a
-binding, select **Invoke Script Function**, and enter `pitwall_mission_control()`.
 
 ## What install changes on your Mac
 
@@ -155,7 +148,7 @@ Found a security problem? Open a private security advisory on GitHub.
 - Undo works in git repositories only.
 - The code map reads imports for JavaScript, TypeScript and Python.
 - Notifications have no Allow or Deny buttons.
-- Mission Control and the activity page open in your browser.
+- The activity page opens in your browser.
 
 ## Development
 

@@ -1,7 +1,6 @@
 "use strict";
 const params = new URLSearchParams(location.search);
 const TOKEN = params.get("t") || "";
-const MISSION = params.get("view") === "mission";
 const $ = (id) => document.getElementById(id);
 const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: {}, ports: [], stopping: null };
 
@@ -95,14 +94,13 @@ function card(s) {
       <div class="row"><button class="btn primary" data-act="allow" ${busy}>${ICON.check}Allow</button>
       <button class="btn" data-act="deny" ${busy}>${ICON.x}Deny</button></div></div>` : "";
   const tools = ui.undo[s.sid] ? "" : cardTools(s, busy);
-  const screen = MISSION ? `<div class="screen">${esc(s.screen || "")}</div>` : "";
   return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}" title="Go to this tab">
     <div class="head"><span class="dot"></span>${cardName(s)}
       <span class="timer" ${timerAttr(s)}></span></div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
-    ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${mapPanel(s)}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}${screen}</article>`;
+    ${ask}${loopStrip(s)}${undoPanel(s)}${tools}${mapPanel(s)}${loopStartPanel(s)}${timelinePanel(s)}${handoffPanel(s)}</article>`;
 }
 
 function summary(list) {
@@ -111,7 +109,6 @@ function summary(list) {
   const waiting = n(["waiting_permission", "waiting_input"]);
   if (waiting) parts.push(`<b>${waiting} waiting</b>`);
   if (n(["working"])) parts.push(`${n(["working"])} working`);
-  if (MISSION && n(["done"])) parts.push(`${n(["done"])} done`);
   return parts.join(" · ") || (list.length ? "All quiet" : "");
 }
 
@@ -125,11 +122,9 @@ function render() {
   } else {
     html = ordered(list).map(card).join("");
   }
-  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
-  if (!MISSION) {
-    const bar = usageBar();
-    if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
-  }
+  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
+  const bar = usageBar();
+  if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
@@ -150,7 +145,7 @@ function tick() {
 
 async function poll() {
   try {
-    const data = await api(`/api/state${MISSION ? "?screen=1" : ""}`);
+    const data = await api("/api/state");
     ui.offset = data.now - Date.now() / 1000;
     ui.data = data;
   } catch {
@@ -222,19 +217,14 @@ $("cards").addEventListener("change", (e) => {
 });
 $("race").addEventListener("click", toggleRaceForm);
 $("usage").addEventListener("click", (e) => {
-  if (e.target.closest("[data-usage]")) api("/api/open", { view: "activity" }).catch((err) => toast(err.message));
+  if (e.target.closest("[data-usage]")) api("/api/open", {}).catch((err) => toast(err.message));
 });
 
-$("mission").addEventListener("click", () => api("/api/mission", {}).catch((err) => toast(err.message)));
-
-if (MISSION) document.body.classList.add("mission");
 poll();
-setInterval(() => { if (!document.hidden) poll(); }, MISSION ? 1500 : 1000);
+setInterval(() => { if (!document.hidden) poll(); }, 1000);
 setInterval(tick, 1000);
-if (!MISSION) {
-  Promise.all([pollPorts(), pollRaces(), pollUsage()]).then(render);
-  setInterval(() => { if (!document.hidden) pollUsage(); }, 60000);
-  setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
-  setInterval(() => { if (!document.hidden) pollRaces(); }, 3000);
-  setInterval(() => { if (!document.hidden) { pollTimelines(); pollMaps(); } }, 2000);
-}
+Promise.all([pollPorts(), pollRaces(), pollUsage()]).then(render);
+setInterval(() => { if (!document.hidden) pollUsage(); }, 60000);
+setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
+setInterval(() => { if (!document.hidden) pollRaces(); }, 3000);
+setInterval(() => { if (!document.hidden) { pollTimelines(); pollMaps(); } }, 2000);

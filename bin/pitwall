@@ -5,7 +5,6 @@
   pitwall update       pull the newest version and restart the daemon
   pitwall uninstall    remove the hooks and stop the daemon
   pitwall doctor       check the setup
-  pitwall mission      open Mission Control
   pitwall activity     open the activity page
   pitwall --version    print the version
   pitwall hook AGENT EVENT   (run by Claude Code and Codex)
@@ -30,14 +29,14 @@ def main(argv):
         from pitwall import install
         result = getattr(install, command)()
         return 1 if result is False else 0
-    if command in ("mission", "activity"):
+    if command == "activity":
         from pitwall import config
         from pitwall.hook import post
         daemon = config.read_daemon()
         if not daemon:
             print("The daemon is not running. Run: pitwall doctor")
             return 1
-        post(daemon, "/api/open", {"view": command})
+        post(daemon, "/api/open", {})
         return 0
     print(__doc__.strip())
     return 0 if command in ("help", "-h", "--help") else 2

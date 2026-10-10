@@ -14,7 +14,24 @@ const ICON = {
   x: '<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
   undo: '<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
   redo: '<svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>',
+  // Background work and scheduled prompts: one icon per kind, so the text keeps the row's width.
+  shell: '<svg viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg>',
+  subagent: '<svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4H8M2 14h2M20 14h2M9 13v2M15 13v2"/></svg>',
+  monitor: '<svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  task: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg>',
+  loop: '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.7-6L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.7 6L3 16"/><path d="M8 16H3v5"/></svg>',
+  repeats: '<svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  once: '<svg viewBox="0 0 24 24"><path d="M10.3 21a2 2 0 0 0 3.4 0"/><path d="M3.3 15.3A1 1 0 0 0 4 17h16a1 1 0 0 0 .7-1.7C19.4 14 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.4 6-2.7 7.3"/></svg>',
+  layers: '<svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 };
+const BG_KIND = { shell: "Shell", subagent: "Sub-agent", monitor: "Monitor", loop: "Loop: Claude times each wake-up",
+  repeats: "Repeating job", once: "One-time reminder" };
+// The icon for a background task or scheduled prompt; the name is in its tooltip and for screen readers.
+function kindIcon(kind) {
+  const name = BG_KIND[kind] || kind || "Task";
+  return `<span class="bg-type" role="img" title="${esc(name)}" aria-label="${esc(name)}">${ICON[kind] || ICON.task}</span>`;
+}
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 // "shop", or "shop › feature" for a worktree under .claude/worktrees (as ports.project_name does).
@@ -112,8 +129,10 @@ function summary(list) {
   const background = list.reduce((sum, s) => sum + (s.background || []).length, 0);
   const jobs = list.flatMap((s) => s.schedules || []);
   const next = Math.min(...jobs.filter((j) => j.next && !j.stopping).map((j) => j.next));
-  const scheduled = jobs.length ? `${jobs.length} scheduled${isFinite(next) ? ` · next <span data-until="${next}"></span>` : ""}` : "";
-  const counts = [background && `${background} in background`, scheduled].filter(Boolean).join(" · ");
+  // Icons with counts keep the top bar on one line: [layers] 2  [clock] 3 · in 4m
+  const scheduled = jobs.length ? `<span class="count">${ICON.clock}${jobs.length}</span>${isFinite(next)
+    ? ` <span class="count-next">· <span data-until="${next}"></span></span>` : ""}` : "";
+  const counts = [background && `<span class="count">${ICON.layers}${background}</span>`, scheduled].filter(Boolean).join(" ");
   if ($("bgcount").dataset.html !== counts) {
     $("bgcount").innerHTML = counts;
     $("bgcount").dataset.html = counts;

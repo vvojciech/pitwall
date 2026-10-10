@@ -51,7 +51,7 @@ function scheduleRow(j) {
   const when = j.stopping ? `<span class="sched-when muted">stopping</span>`
     : j.next ? `<span class="sched-when${j.final ? " final" : ""}" data-until="${j.next}"${prefix}>${j.final ? "last " : ""}${until(j.next)}</span>`
     : `<span class="sched-when muted">${esc(j.human)}</span>`;
-  return `<li class="sched ${esc(j.kind)}" title="${esc(tip)}"><span class="bg-type">${esc(j.kind)}</span>
+  return `<li class="sched ${esc(j.kind)}" title="${esc(tip)}">${kindIcon(j.kind)}
     <span class="bg-desc">${esc(j.text)}</span>${when}
     <button class="sched-stop" data-act="sched-stop" data-id="${esc(j.id)}" aria-label="Stop this scheduled job"
       title="Stop this scheduled job"${j.stopping ? " disabled" : ""}>${ICON.x}</button></li>`;
@@ -63,7 +63,7 @@ function backgroundList(s) {
   const tasks = s.background || [];
   const jobs = s.schedules || [];
   if (!tasks.length && !jobs.length) return "";
-  const row = (type, text, status) => `<li><span class="bg-type">${esc(type)}</span>
+  const row = (type, text, status) => `<li>${kindIcon(type)}
     <span class="bg-desc">${esc(text)}</span>${status ? `<span class="bg-status">${esc(status)}</span>` : ""}</li>`;
   let rows = tasks.slice(0, BG_SHOWN).map((t) => row(t.type || "task", t.description || t.command || "", t.status)).join("");
   if (tasks.length > BG_SHOWN) rows += `<li class="bg-more">and ${tasks.length - BG_SHOWN} more</li>`;

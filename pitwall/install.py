@@ -88,7 +88,10 @@ def install():
         print("Adding hooks to", CODEX, "(Codex asks you to trust them on its next start)")
     print("Starting the daemon")
     launch_agent(load=True)
-    time.sleep(3)
+    for _ in range(30):  # the venv's first import of iterm2 takes a few seconds
+        if daemon_answers():
+            break
+        time.sleep(0.5)
     doctor()
     print("\nIn iTerm2, open View > Show Toolbelt, then Toolbelt > Pitwall.")
 

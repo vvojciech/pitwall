@@ -28,6 +28,23 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
   "Undo turn" lists the files it will change, then puts them back. "Redo" brings the agent's
   changes back. Pitwall does not change your index, commits, branches or stash. Ignored
   files such as `node_modules` stay as they are.
+- **Timeline.** "Timeline" on a card shows the agent's prompts, thinking, replies, tool calls
+  and sub-agents, read from its transcript. It updates while it is open.
+- **Hand off.** "Hand off" on a card writes a message for Claude or Codex: the task, the recent
+  activity, the diff since the first prompt and the failed commands for the project. Choose
+  Continue, Review or Opinion, edit the text, and send it. The other agent starts in a new
+  split beside the first one.
+- **Shared memory.** A new Codex session starts with the Claude Code notes for the project, and
+  a new Claude Code session starts with the Codex memories. Both are marked as possibly out of
+  date. Turn it off with `PITWALL_SHARED_MEMORY=0`.
+- **Failed commands.** When a command fails in a shell tab, the panel shows it with its last
+  output lines. "Send to Claude" types it into the agent that works in that project, when the
+  agent is not busy. With no agent there, "Fix with Claude" or "Codex" starts one in a new
+  split. This needs iTerm2 shell integration.
+- **Dev server tabs.** When Claude starts a dev server (`npm run dev`, `vite`, `rails s` and
+  others), Pitwall runs it in its own tab, so it keeps running after the turn. Claude gets
+  the path of the log file. Turn it off with `PITWALL_DEV_TABS=0`.
+- **Ports.** The panel lists the ports that your projects listen on, with Open and Stop.
 - **Setup and doctor.** `pitwall install` adds the hooks, with a backup of each file it
   changes, and starts the daemon. `pitwall doctor` checks each part and tells you the fix.
 
@@ -86,6 +103,12 @@ State and logs are in `~/.pitwall/`. Nothing leaves your Mac.
 
 ```sh
 python3 -m unittest
+```
+
+To run a second daemon for a test, give it its own state folder, and keep it off the toolbelt:
+
+```sh
+PITWALL_HOME=/tmp/pw PITWALL_NO_TOOLBELT=1 PYTHONPATH=. ~/.pitwall/venv/bin/python -m pitwall.daemon
 ```
 
 ## License

@@ -3,7 +3,7 @@ const params = new URLSearchParams(location.search);
 const TOKEN = params.get("t") || "";
 const MISSION = params.get("view") === "mission";
 const $ = (id) => document.getElementById(id);
-const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "" };
+const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, ports: [], stopping: null };
 
 const LABELS = {
   working: "Working", waiting_permission: "Needs permission", waiting_input: "Waiting for you",
@@ -88,10 +88,7 @@ function card(s) {
       ${s.permission ? `<div class="what">${esc(s.permission)}</div>` : ""}
       <div class="row"><button class="btn primary" data-act="allow" ${busy}>${ICON.check}Allow</button>
       <button class="btn" data-act="deny" ${busy}>${ICON.x}Deny</button></div></div>` : "";
-  const settled = !["working", "waiting_permission"].includes(s.state);
-  const tools = settled && !ui.undo[s.sid] && (s.can_undo || s.can_redo) ? `<div class="footer" data-stop>
-      ${s.can_redo ? `<button class="btn ghost" data-act="redo" ${busy}>${ICON.redo}Redo</button>` : ""}
-      ${s.can_undo ? `<button class="btn ghost" data-act="undo" ${busy}>${ICON.undo}Undo turn</button>` : ""}</div>` : "";
+  const tools = ui.undo[s.sid] ? "" : cardTools(s, busy);
   const screen = MISSION ? `<div class="screen">${esc(s.screen || "")}</div>` : "";
   return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}" title="Go to this tab">
     <div class="head"><span class="dot"></span><span class="project">${esc(base(s.cwd) || s.title)}</span>
@@ -99,7 +96,7 @@ function card(s) {
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}
-    ${ask}${undoPanel(s)}${tools}${screen}</article>`;
+    ${ask}${undoPanel(s)}${tools}${timelinePanel(s)}${handoffPanel(s)}${screen}</article>`;
 }
 
 function summary(list) {
@@ -122,11 +119,15 @@ function render() {
   } else {
     html = list.map(card).join("");
   }
+  if (ui.data && !MISSION) html = failuresSection(ui.data.failures) + html + portsSection();
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
-  if (html !== ui.html) {
+  // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
+  const typing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
+  if (html !== ui.html && !typing) {
     $("cards").innerHTML = html;
     ui.html = html;
+    document.querySelectorAll(".timeline ol").forEach((ol) => { ol.scrollTop = ol.scrollHeight; });
   }
   tick();
 }
@@ -153,7 +154,9 @@ async function act(sid, name) {
   ui.pending[sid] = true;
   render();
   try {
-    if (name === "allow" || name === "deny") {
+    if (await featureAct(sid, name, ui.button)) {
+      // handled in features.js
+    } else if (name === "allow" || name === "deny") {
       await api("/api/respond", { sid, allow: name === "allow" });
     } else if (name === "undo") {
       ui.undo[sid] = { loading: true };
@@ -178,12 +181,23 @@ async function act(sid, name) {
 }
 
 $("cards").addEventListener("click", (e) => {
+  const fail = e.target.closest("[data-fail]");
+  if (fail) return failureAct(fail);
+  const port = e.target.closest("[data-port]");
+  if (port) return portAct(port);
   const el = e.target.closest("[data-sid]");
   if (!el) return;
   const button = e.target.closest("[data-act]");
-  if (button) return act(el.dataset.sid, button.dataset.act);
+  if (button) {
+    ui.button = button;
+    return act(el.dataset.sid, button.dataset.act);
+  }
   if (e.target.closest("[data-stop]")) return;
   api("/api/focus", { sid: el.dataset.sid }).catch((err) => toast(err.message));
+});
+$("cards").addEventListener("input", (e) => {
+  const sid = e.target.dataset.handoff;
+  if (sid && ui.handoff[sid]) ui.handoff[sid].text = e.target.value;
 });
 $("mission").addEventListener("click", () => api("/api/mission", {}).catch((err) => toast(err.message)));
 
@@ -191,3 +205,8 @@ if (MISSION) document.body.classList.add("mission");
 poll();
 setInterval(() => { if (!document.hidden) poll(); }, MISSION ? 1500 : 1000);
 setInterval(tick, 1000);
+if (!MISSION) {
+  pollPorts().then(render);
+  setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
+  setInterval(() => { if (!document.hidden) pollTimelines(); }, 2000);
+}

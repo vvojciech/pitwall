@@ -23,7 +23,8 @@ from pitwall.state import apply, discover
 from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
-STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8"}
+STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8",
+          "/features.js": "text/javascript; charset=utf-8"}
 ORDER = {"waiting_permission": 0, "waiting_input": 1, "failed": 2, "working": 3, "done": 4, "idle": 5}
 BUSY = ("working", "waiting_permission")
 SCAN_SECONDS = 5
@@ -198,13 +199,17 @@ async def main(connection):
     daemon.features = Features(daemon, connection)
     await daemon.features.watch_commands()
     config.write_private(config.DAEMON_FILE, json.dumps({"port": port, "token": token, "pid": os.getpid()}))
-    await iterm2.tool.async_register_web_view_tool(connection, "Pitwall", "com.vvojciech.pitwall", False, daemon.url())
+    if os.environ.get("PITWALL_NO_TOOLBELT") != "1":  # a test daemon must not take over the panel
+        await iterm2.tool.async_register_web_view_tool(connection, "Pitwall", "com.vvojciech.pitwall", False, daemon.url())
 
     @iterm2.RPC
     async def pitwall_mission_control():
         subprocess.Popen(["open", daemon.url("mission")])
 
-    await pitwall_mission_control.async_register(connection)
+    try:
+        await pitwall_mission_control.async_register(connection)
+    except iterm2.notifications.SubscriptionException as e:  # another daemon holds the name
+        print(f"pitwall: Mission Control key binding not registered: {e}", flush=True)
     for s in daemon.sessions.values():
         await daemon.tabs.show(s, daemon.unseen)
         daemon.status.write(s)

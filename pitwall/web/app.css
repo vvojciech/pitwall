@@ -34,7 +34,7 @@ button:disabled { opacity: .5; cursor: progress; }
 .icon-btn { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 7px; background: var(--card); color: var(--muted); }
 .icon-btn:hover { color: var(--ink); }
 
-main { padding: 10px; display: grid; gap: 8px; }
+main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .mission main { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; padding: 16px; }
 .mission body, body.mission { font-size: 13px; }
 body.mission #mission { display: none; }
@@ -85,7 +85,38 @@ body.mission .brand .view { display: inline; }
 .ask .btn { flex: 1; }
 .btn.ghost { border-color: transparent; background: none; color: var(--muted); padding: 0 6px; }
 .btn.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--line); }
-.footer { margin: 4px -6px -4px 0; display: flex; justify-content: flex-end; }
+.footer { margin: 6px -6px -4px; display: flex; flex-wrap: wrap; gap: 2px; }
+.btn.ghost.on { color: var(--ink); background: var(--line); }
+
+.panel { margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); cursor: default; color: var(--muted); font-size: 11px; }
+.timeline ol { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; display: grid; gap: 3px; }
+.timeline li { display: grid; grid-template-columns: 62px 1fr; gap: 6px; line-height: 1.4; }
+.timeline li span:first-child { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; padding-top: 1px; }
+.timeline li span:last-child { color: var(--ink); overflow-wrap: anywhere; }
+.timeline li span:last-child { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.timeline .k-tool span:last-child, .timeline .k-agent span:last-child { font: 11px var(--mono); color: var(--muted); -webkit-line-clamp: 2; }
+.timeline .k-thinking span:last-child { color: var(--muted); font-style: italic; }
+.timeline .k-prompt span:last-child { font-weight: 600; }
+.timeline .k-agent span:first-child { color: var(--blue); }
+
+.handoff label { display: block; margin: 0 0 4px; color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.seg { display: flex; margin-bottom: 9px; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { flex: 1; height: 24px; border: 0; background: none; font-size: 11px; color: var(--muted); }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--ink); color: var(--bg); }
+.handoff textarea { width: 100%; height: 170px; resize: vertical; padding: 7px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 10.5px/1.45 var(--mono); }
+.hint-line { margin: 5px 0 8px; color: var(--faint); }
+
+.group { display: grid; gap: 6px; }
+.group h2 { margin: 6px 2px 0; font-size: 10.5px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+.failure { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 9px 10px; }
+.failure .fcmd { flex: 1; font: 11.5px var(--mono); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.failure pre { margin: 6px 0 8px; padding: 6px 8px; border-radius: 6px; background: var(--term-bg); color: var(--term-ink); font: 10.5px/1.4 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 6.5em; overflow: hidden; }
+.port { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+.pnum { font: 600 11.5px var(--mono); color: var(--ink); min-width: 46px; }
+.pname { flex: 1; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-btn.small { width: 22px; height: 22px; border-radius: 6px; }
+.icon-btn.small svg { width: 12px; height: 12px; }
 
 .undo { margin-top: 9px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); cursor: default; }
 .undo p { margin: 0 0 6px; }

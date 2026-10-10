@@ -146,4 +146,7 @@ def doctor():
                        "Run: pitwall install"))
     for label, ok, fix in checks:
         print(f"  {'ok  ' if ok else 'FAIL'}  {label}" + ("" if ok else f"\n        {fix}"))
+    shell = any(Path.home().glob(".iterm2_shell_integration.*")) or bool(os.environ.get("ITERM_SHELL_INTEGRATION_INSTALLED"))
+    print(f"  {'ok  ' if shell else 'opt '}  iTerm2 shell integration (needed to catch failed commands)"
+          + ("" if shell else "\n        In iTerm2, open iTerm2 > Install Shell Integration."))
     return all(ok for _, ok, _ in checks)

@@ -40,7 +40,9 @@ def to_event(agent, name, payload, env, ts):
         "agent_session": payload.get("session_id"),
     }
     if name == "UserPromptSubmit":
-        event["task"] = first_line(payload.get("prompt"))
+        prompt = first_line(payload.get("prompt"))
+        # Claude Code submits background-task notifications as prompts; they are not a task.
+        event["task"] = None if prompt.startswith("<") else prompt
     tool = payload.get("tool_name")
     if tool:
         event["action"] = describe(tool, payload.get("tool_input"))

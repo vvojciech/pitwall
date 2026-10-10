@@ -21,6 +21,9 @@ class EventTests(unittest.TestCase):
         e = ev("UserPromptSubmit", {"prompt": "  fix the build\nmore detail"})
         self.assertEqual(e["task"], "fix the build")
 
+    def test_a_system_notification_is_not_a_task(self):
+        self.assertIsNone(ev("UserPromptSubmit", {"prompt": "<task-notification>\n<task-id>x</task-id>"})["task"])
+
     def test_tool_action_names_the_file(self):
         e = ev("PreToolUse", {"tool_name": "Edit", "tool_input": {"file_path": "/a/b/app.ts"}})
         self.assertEqual(e["action"], "Edit app.ts")

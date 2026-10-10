@@ -55,9 +55,10 @@ def limits(home):
     try:
         status = json.loads(STATUS.read_text())
         r = status.get("rate_limits") or {}
-        pick = lambda w: w and {"used": w.get("used_percentage"), "resets_at": w.get("resets_at")}
+        # Claude's windows are fixed; the status line does not send their length.
+        pick = lambda w, window: w and {"used": w.get("used_percentage"), "resets_at": w.get("resets_at"), "window": window}
         if r:
-            out["claude"] = {"five_hour": pick(r.get("five_hour")), "week": pick(r.get("seven_day")),
+            out["claude"] = {"five_hour": pick(r.get("five_hour"), 5 * 3600), "week": pick(r.get("seven_day"), 7 * 86400),
                              "seen": STATUS.stat().st_mtime}
     except (OSError, ValueError, AttributeError):
         pass

@@ -22,13 +22,33 @@ const fmt = {
   },
 };
 
+// How much of the limit's window has passed, in percent; null without a reset time.
+function passed(w) {
+  if (!w.resets_at || !w.window) return null;
+  const left = w.resets_at - Date.now() / 1000;
+  return Math.max(0, Math.min(100, Math.round(100 * (1 - left / w.window))));
+}
+
+// Two layers in one track: the time passed in the window (faint, a tick at its end), then the share used.
+// A used fill past the tick means the limit goes faster than the window.
+function bars(used, time, level) {
+  const tick = time == null ? "" : `<span class="time" style="width:${time}%"></span>`;
+  return `${tick}<span class="used ${level}" style="width:${Math.max(used, 1)}%"></span>${time == null ? "" : `<i class="tick" style="left:${time}%"></i>`}`;
+}
+
+function paceText(used, time) {
+  if (time == null) return "";
+  return `, ${time}% of the window passed${used > time + 5 ? " (ahead of the clock)" : ""}`;
+}
+
 function meter(label, w) {
   if (!w || w.used == null) return "";
   const used = Math.max(0, Math.min(100, Math.round(w.used)));
   const level = used >= 90 ? "crit" : used >= 75 ? "warn" : "ok";
-  return `<div class="meter-row"><span class="mlabel">${label}</span>
-    <div class="meter" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${used}">
-      <span class="${level}" style="width:${Math.max(used, 1)}%"></span></div>
+  const time = passed(w);
+  return `<div class="meter-row" title="${used}% used${paceText(used, time)}"><span class="mlabel">${label}</span>
+    <div class="meter" role="meter" aria-label="${label}: ${used}% used${paceText(used, time)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${used}">
+      ${bars(used, time, level)}</div>
     <span class="mval ${level}">${used}%</span><span class="mreset">${w.resets_at ? `resets ${fmt.reset(w.resets_at)}` : ""}</span></div>`;
 }
 
@@ -45,8 +65,9 @@ function miniMeter(label, w) {
   const used = Math.max(0, Math.min(100, Math.round(w.used)));
   const level = used >= 90 ? "crit" : used >= 75 ? "warn" : "ok";
   const reset = w.resets_at ? `, resets ${fmt.reset(w.resets_at)}` : "";
-  return `<span class="mm" title="${label === "5h" ? "5-hour window" : "Week"}: ${used}% used${reset}"><em>${label}</em>
-    <span class="meter"><span class="${level}" style="width:${Math.max(used, 2)}%"></span></span><b class="${level}">${used}%</b></span>`;
+  const time = passed(w);
+  return `<span class="mm" title="${label === "5h" ? "5-hour window" : "Week"}: ${used}% used${paceText(used, time)}${reset}"><em>${label}</em>
+    <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
 function usageBar() {

@@ -63,8 +63,9 @@ class ActivityTests(unittest.TestCase):
 
     def test_codex_limits(self):
         limits = codex_limits(CODEX)
-        self.assertEqual(limits["five_hour"], {"used": 12.0, "resets_at": 1791638445})
-        self.assertEqual(limits["week"], {"used": 3.0, "resets_at": 1791966425})
+        self.assertEqual(limits["five_hour"], {"used": 12.0, "resets_at": 1791638445, "window": 18000})
+        self.assertEqual(limits["week"]["window"], 604800)
+        self.assertEqual(limits["week"], {"used": 3.0, "resets_at": 1791966425, "window": 604800})
 
 
 if __name__ == "__main__":

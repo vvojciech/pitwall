@@ -1,7 +1,7 @@
 :root {
   --bg: #f5f4f0; --card: #ffffff; --ink: #1c1b18; --muted: #6d6960; --faint: #9b968c; --line: #e3e0d8;
   --amber: #a86400; --amber-bg: #fff3dc; --amber-line: #f0c27a;
-  --green: #2b8450; --red: #bf3b34; --red-bg: #fdebe9; --blue: #3567d4;
+  --green: #2b8450; --red: #bf3b34; --red-bg: #fdebe9; --blue: #3567d4; --time: #c2bcae;
   /* Agent identity colours, also the chart series. Validated with the dataviz palette check. */
   --claude: #c96442; --codex: #3567d4; --term-bg: #1b1a17; --term-ink: #d8d5cc;
   --radius: 10px; --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
@@ -11,7 +11,7 @@
   :root:not([data-theme="light"]) {
     --bg: #141311; --card: #1d1c19; --ink: #ecebe6; --muted: #a39e94; --faint: #6f6b63; --line: #2d2b27;
     --amber: #f2a93b; --amber-bg: rgba(242, 169, 59, .1); --amber-line: rgba(242, 169, 59, .45);
-    --green: #5dc58b; --red: #f06c61; --red-bg: rgba(240, 108, 97, .1); --blue: #7aa2ff;
+    --green: #5dc58b; --red: #f06c61; --red-bg: rgba(240, 108, 97, .1); --blue: #7aa2ff; --time: #4a463f;
     --claude: #d4734f; --codex: #638cec; --term-bg: #0e0d0c; --term-ink: #d8d5cc;
     color-scheme: dark;
   }
@@ -199,9 +199,12 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 .limits .agent { font-size: 11.5px; color: var(--ink); }
 .meter-row { display: grid; grid-template-columns: 50px 1fr 34px; grid-template-areas: "l m v" ". r r"; column-gap: 8px; align-items: center; font-size: 11px; }
 .mlabel { grid-area: l; color: var(--muted); }
-.meter { grid-area: m; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.meter span { display: block; height: 100%; border-radius: 3px; background: var(--muted); }
-.meter span.warn { background: var(--amber); } .meter span.crit { background: var(--red); }
+.meter { grid-area: m; position: relative; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.meter span, .meter .tick { position: absolute; left: 0; top: 0; height: 100%; }
+.meter .time { background: var(--time); }
+.meter .used { border-radius: 3px; background: var(--muted); }
+.meter .used.warn { background: var(--amber); } .meter .used.crit { background: var(--red); }
+.meter .tick { width: 2px; margin-left: -1px; background: var(--ink); opacity: .7; }
 .mval { grid-area: v; text-align: right; font: 600 11px var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
 .mval.warn { color: var(--amber); } .mval.crit { color: var(--red); }
 .mreset { grid-area: r; color: var(--faint); font-size: 10.5px; }
@@ -228,6 +231,7 @@ body.activity-page { font-size: 13px; }
 .panel-card .usage-card.wide { border: 0; padding: 0; gap: 16px; }
 .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .card-head h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.card-head .note { color: var(--muted); font-size: 11px; text-align: right; }
 .legend { display: flex; gap: 14px; color: var(--muted); font-size: 11.5px; }
 .legend span, .tip span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i, .tip i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
@@ -307,9 +311,7 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 .urow .agent { color: var(--ink); font-size: 11px; }
 .mm { display: grid; grid-template-columns: 16px 1fr 30px; align-items: center; gap: 5px; min-width: 0; }
 .mm em { font-style: normal; color: var(--faint); font-size: 10px; }
-.mm .meter { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.mm .meter span { display: block; height: 100%; border-radius: 2px; background: var(--muted); }
-.mm .meter span.warn { background: var(--amber); } .mm .meter span.crit { background: var(--red); }
+.mm .meter { height: 6px; }
 .mm b { font: 600 10.5px var(--mono); text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
 .mm b.warn { color: var(--amber); } .mm b.crit { color: var(--red); }
 .mm.none b { color: var(--faint); font-weight: 400; }

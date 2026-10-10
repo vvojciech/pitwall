@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-10-10)
 
+- Plan limit bars have two layers: the share of the limit used, and the share of the window that
+  has passed, with a mark at its end. A used bar past the mark means the limit runs out before
+  the window resets. Hover a bar for both numbers.
 - An **Update** button shows in the top bar of the panel when a newer Pitwall is on GitHub. It runs
   `pitwall update`, and the panel comes back by itself. Pitwall checks with `git fetch` every 6
   hours; `launchctl setenv PITWALL_UPDATE_CHECK 0` turns the check off.

@@ -143,5 +143,6 @@ def codex_limits(lines):
             found = limits
     if not found:
         return None
-    pick = lambda w: w and {"used": w.get("used_percent"), "resets_at": w.get("resets_at")}
-    return {"five_hour": pick(found.get("primary")), "week": pick(found.get("secondary"))}
+    pick = lambda w, default: w and {"used": w.get("used_percent"), "resets_at": w.get("resets_at"),
+                                     "window": (w.get("window_minutes") or default) * 60}
+    return {"five_hour": pick(found.get("primary"), 300), "week": pick(found.get("secondary"), 10080)}

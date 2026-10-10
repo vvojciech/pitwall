@@ -83,7 +83,7 @@ function chart(rows) {
 
 function limitsCard() {
   const l = data.limits;
-  return `<section class="panel-card"><div class="card-head"><h2>Plan limits</h2></div>
+  return `<section class="panel-card"><div class="card-head"><h2>Plan limits</h2><span class="note">The mark is the time passed in the window</span></div>
     <div class="usage-card wide">${shown().map(([a]) => limitsBlock(a, l[a])).join("")}</div></section>`;
 }
 

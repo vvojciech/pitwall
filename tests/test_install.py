@@ -29,6 +29,13 @@ class EditHooksTests(unittest.TestCase):
         self.assertEqual(len(hooks["SessionEnd"]), 1)
         self.assertEqual(json.loads(self.path.read_text())["model"], "x")
 
+    def test_codex_interrupt_hook_fits_its_3_second_limit(self):
+        install.edit_hooks(self.path, "codex", ("Stop", "Interrupt"), add=True)
+        hooks = json.loads(self.path.read_text())["hooks"]
+        timeout = lambda event: [h["timeout"] for e in hooks[event] if install.is_ours(e) for h in e["hooks"]]
+        self.assertEqual(timeout("Interrupt"), [3])
+        self.assertEqual(timeout("Stop"), [10])
+
     def test_remove_restores_the_original(self):
         install.edit_hooks(self.path, "claude", ("Stop", "SessionEnd"), add=True)
         install.edit_hooks(self.path, "claude", ("Stop", "SessionEnd"), add=False)

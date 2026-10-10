@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2026-10-10)
+
+- Codex checked end to end: card, task, last action, context ring, Allow, Deny and timeline.
+- Fixed: the timeline showed Codex commands as JavaScript (`tools.exec_command({cmd:...})`). It
+  now shows `Bash <command>`, as the card does.
+- Fixed: Codex warned "clamping Interrupt hook timeout to 3s". Pitwall's Codex Interrupt hook now
+  asks for 3 seconds. Codex asks you to trust this one hook again.
+
 ## 0.5.0 (2026-10-10)
 
 - Claude's questions (AskUserQuestion) show on the card with their options, not as a permission

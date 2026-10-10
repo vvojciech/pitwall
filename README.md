@@ -177,6 +177,7 @@ Found a security problem? Open a private security advisory on GitHub.
 | No Claude plan limits | They appear after the next Claude Code reply, when the status line runs. |
 | Failed commands never show | Install iTerm2 shell integration, then open a new tab. |
 | A Codex card never shows | Approve Pitwall's hooks the next time Codex starts. |
+| Codex never shows Allow and Deny | Codex asks only when its approval settings send the request to you. With `approvals_reviewer = "auto_review"`, Codex decides by itself. |
 | The panel is on the right | iTerm2 always docks the toolbelt on the right. Set **Settings > Appearance > General > Tab bar location** to **Left** for a vertical tab list with status dots. |
 
 </details>

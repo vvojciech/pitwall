@@ -40,7 +40,8 @@ def edit_hooks(path, agent, events, add):
     for event in set(hooks) | set(events):
         entries = [e for e in hooks.get(event, []) if not is_ours(e)]
         if add and event in events:
-            entries.append({"hooks": [{"type": "command", "command": hook_command(agent, event), "timeout": 10}]})
+            timeout = 3 if (agent, event) == ("codex", "Interrupt") else 10  # Codex caps Interrupt hooks at 3 s
+            entries.append({"hooks": [{"type": "command", "command": hook_command(agent, event), "timeout": timeout}]})
         if entries:
             hooks[event] = entries
         else:

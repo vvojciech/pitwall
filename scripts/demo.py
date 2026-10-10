@@ -45,6 +45,10 @@ SESSIONS = [
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]
 SESSIONS.append(SESSIONS.pop(0))  # tab order: the waiting agent is in the last tab
+CONTEXT = {"1": (34, 200000), "2": (83, 258400), "3": (94, 1000000)}  # one of each ring colour
+for c in SESSIONS:
+    used, size = CONTEXT[c["sid"]]
+    c["context"] = {"used": used, "size": size, "tokens": size * used // 100}
 FAILURES = [{"id": 1, "command": "npm run dev", "status": 1, "cwd": SHOP, "project": "acme-shop", "agent_sid": "1",
              "agent": "claude", "output": "Error: listen EADDRINUSE: address already in use :::3000",
              "busy": {"pid": 4211, "command": "node", "port": 3000, "project": "storefront"}}]

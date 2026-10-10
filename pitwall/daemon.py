@@ -16,7 +16,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, iterm, snapshot
+from pitwall import config, context, iterm, snapshot
 from pitwall.features import Features
 from pitwall.http import reply, serve
 from pitwall.state import apply, discover, layout_order
@@ -155,7 +155,8 @@ class Daemon:
             card.update(title=session.name, focused=sid == self.focused, unseen=sid in self.unseen,
                         can_undo=bool(s["snapshots"]), can_redo=bool(s.get("redo")),
                         reviews=writer and os.path.basename(writer.get("cwd") or ""),
-                        tab_name=tab and await tab.async_get_variable("titleOverride") or None)
+                        tab_name=tab and await tab.async_get_variable("titleOverride") or None,
+                        context=context.for_session(s, config.HOME, Path.home()))
             cards.append(card)
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
         return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards()}
@@ -247,6 +248,9 @@ def trim_log(path, limit=1_000_000, keep=200_000):
 
 if __name__ == "__main__":
     trim_log(config.LOG_FILE)
+    for old in (config.HOME / "status").glob("*.json"):  # one file per Claude session; keep three days
+        if time.time() - old.stat().st_mtime > 3 * 86400:
+            old.unlink(missing_ok=True)
     # Wait for iTerm2: asking it for an API cookie would launch it.
     while not iterm_running():
         time.sleep(5)

@@ -96,7 +96,7 @@ function card(s) {
   const tools = ui.undo[s.sid] ? "" : cardTools(s, busy);
   return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}" title="Go to this tab">
     <div class="head"><span class="dot"></span>${cardName(s)}
-      <span class="timer" ${timerAttr(s)}></span></div>
+      <span class="timer" ${timerAttr(s)}></span>${contextRing(s)}</div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
     ${task}${action}${backgroundList(s)}${s.state === "failed" && s.error ? `<div class="error">${esc(s.error)}</div>` : ""}

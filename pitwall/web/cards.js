@@ -15,6 +15,20 @@ function setOrder(order) {
   render();
 }
 
+// How full the agent's context window is, as a ring (like the Claude mobile app). Hover for numbers.
+function contextRing(s) {
+  const c = s.context;
+  if (!c || c.used == null) return "";
+  const used = Math.max(0, Math.min(100, c.used));
+  const level = used >= 90 ? "crit" : used >= 80 ? "warn" : "ok";
+  const r = 7, length = 2 * Math.PI * r;
+  const size = c.size >= 1e6 ? `${c.size / 1e6}M` : c.size ? `${Math.round(c.size / 1000)}k` : "";
+  const tokens = c.tokens ? `, ${Math.round(c.tokens / 1000)}k tokens` : "";
+  return `<span class="ring ${level}" title="Context ${used}% full${size ? ` of ${size}` : ""}${tokens}" aria-label="Context ${used}% full">
+    <svg viewBox="0 0 18 18" aria-hidden="true"><circle class="track" cx="9" cy="9" r="${r}"/>
+    <circle class="fill" cx="9" cy="9" r="${r}" stroke-dasharray="${(length * used / 100).toFixed(2)} ${length.toFixed(2)}" transform="rotate(-90 9 9)"/></svg></span>`;
+}
+
 // Background work Claude Code reported at its last stop: shells, sub-agents, monitors, wake-ups.
 const BG_SHOWN = 3;
 function backgroundList(s) {

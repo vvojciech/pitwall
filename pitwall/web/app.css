@@ -323,3 +323,11 @@ body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }
 .bg-status { color: var(--blue); font-size: 10.5px; }
 .bg-more { color: var(--faint); display: block !important; }
 .order .bgcount { margin-left: auto; color: var(--blue); font-size: 10.5px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+
+/* Context ring in the card head */
+.ring { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: none; }
+.ring svg { width: 16px; height: 16px; fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.ring .track { stroke: var(--line); }
+.ring .fill { stroke: var(--muted); transition: stroke-dasharray .4s ease; }
+.ring.warn .fill { stroke: var(--amber); }
+.ring.crit .fill { stroke: var(--red); }

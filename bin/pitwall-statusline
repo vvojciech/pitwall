@@ -5,6 +5,12 @@ input=$(cat)
 dir="${PITWALL_HOME:-$HOME/.pitwall}"
 umask 077
 printf '%s' "$input" > "$dir/claude-status.json.tmp" 2>/dev/null && mv -f "$dir/claude-status.json.tmp" "$dir/claude-status.json"
+# One file per session too, for each agent's context ring. Only plain ids become file names.
+sid=$(printf '%s' "$input" | grep -o '"session_id" *: *"[A-Za-z0-9-]*"' | head -1 | sed 's/.*"\([A-Za-z0-9-]*\)"$/\1/')
+if [ -n "$sid" ]; then
+  mkdir -p "$dir/status" 2>/dev/null
+  printf '%s' "$input" > "$dir/status/$sid.json.tmp" 2>/dev/null && mv -f "$dir/status/$sid.json.tmp" "$dir/status/$sid.json"
+fi
 original=$(cat "$dir/statusline-command" 2>/dev/null)
 [ -n "$original" ] && printf '%s' "$input" | bash -c "$original"
 exit 0

@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 import re
 
+from pitwall import questions
+
 # Tool inputs that best name what a tool call does, in order of preference.
 TARGET_KEYS = ("file_path", "path", "notebook_path", "command", "pattern", "url", "query", "description")
 
@@ -94,6 +96,8 @@ def to_event(agent, name, payload, env, ts):
     if tool:
         event["action"] = describe(tool, payload.get("tool_input"))
         event.update(touched_files(tool, payload.get("tool_input"), event["cwd"]))
+        if tool == "AskUserQuestion":
+            event["questions"] = questions.parse(payload.get("tool_input"))
     if name == "Notification":
         event["notification_type"] = payload.get("notification_type")
         event["message"] = first_line(payload.get("message"))

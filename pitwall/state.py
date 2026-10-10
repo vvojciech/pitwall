@@ -65,6 +65,7 @@ def new_session(event):
         "finished": None,
         "action": None,
         "permission": None,
+        "questions": None,
         "error": None,
         "updated": event["ts"],
         "snapshots": [],
@@ -93,6 +94,10 @@ def apply(sessions, event):
     if "crons" in event:
         s["crons"] = event["crons"]
 
+    # Questions from AskUserQuestion stay up while Claude waits for the answer, and go with the next event.
+    if name not in ("PermissionRequest", "Notification"):
+        s["questions"] = event.get("questions") if name == "PreToolUse" else None
+
     if name == "UserPromptSubmit":
         s.update(state="working", task=event.get("task") or s["task"], started=event["ts"],
                  finished=None, action=None, permission=None, error=None, redo=None, touched={}, current=None)
@@ -109,12 +114,16 @@ def apply(sessions, event):
             if event["touch"] == "edit" or path not in touched:  # an edit outranks a read
                 touched[path] = event["touch"]
             s["current"] = path
+    elif name == "PermissionRequest" and (event.get("questions") or s.get("questions")):
+        s.update(state="waiting_input", permission=None, questions=event.get("questions") or s["questions"])
     elif name == "PermissionRequest":
         s.update(state="waiting_permission", permission=event.get("action"))
     elif name == "Notification":
         kind = event.get("notification_type") or ""
         message = (event.get("message") or "").lower()
-        if kind == "permission_prompt" or "permission" in message:
+        if s.get("questions"):
+            s["state"] = "waiting_input"
+        elif kind == "permission_prompt" or "permission" in message:
             s["state"] = "waiting_permission"
         elif s["state"] not in ("done", "idle", "failed"):
             s["state"] = "waiting_input"

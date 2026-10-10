@@ -120,9 +120,12 @@ def install():
     print("Creating the daemon venv in", config.VENV)
     subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
     subprocess.run([f"{config.VENV}/bin/pip", "install", "-q", "--upgrade", "iterm2"], check=True)
-    print("Adding hooks to", CLAUDE, "(backup kept next to it)")
-    edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=True)
-    wrap_statusline(CLAUDE, config.HOME, add=True)
+    if not CLAUDE.parent.exists() and not CODEX.parent.exists():
+        print("No Claude Code (~/.claude) and no Codex (~/.codex) found. Install one, then run: pitwall install")
+    if CLAUDE.parent.exists():
+        print("Adding hooks to", CLAUDE, "(backup kept next to it)")
+        edit_hooks(CLAUDE, "claude", CLAUDE_EVENTS, add=True)
+        wrap_statusline(CLAUDE, config.HOME, add=True)
     if edit_hooks(CODEX, "codex", CODEX_EVENTS, add=True):
         print("Adding hooks to", CODEX, "(Codex asks you to trust them on its next start)")
     print("Starting the daemon")
@@ -194,11 +197,12 @@ def doctor():
         ("LaunchAgent is loaded", subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
                                                  capture_output=True).returncode == 0, "Run: pitwall install"),
         ("Daemon answers", daemon_answers(), f"Start iTerm2, then read {config.LOG_FILE}"),
-        ("Claude Code status line feeds the plan limits", "pitwall-statusline" in CLAUDE.read_text(),
-         "Run: pitwall install"),
-        (f"Claude Code hooks ({len(CLAUDE_EVENTS)} events)", count_hooks(CLAUDE) == len(CLAUDE_EVENTS),
-         "Run: pitwall install"),
     ]
+    if CLAUDE.parent.exists():
+        statusline = CLAUDE.exists() and "pitwall-statusline" in CLAUDE.read_text()
+        checks += [("Claude Code status line feeds the plan limits", statusline, "Run: pitwall install"),
+                   (f"Claude Code hooks ({len(CLAUDE_EVENTS)} events)", count_hooks(CLAUDE) == len(CLAUDE_EVENTS),
+                    "Run: pitwall install")]
     if CODEX.parent.exists():
         checks.append((f"Codex hooks ({len(CODEX_EVENTS)} events)", count_hooks(CODEX) == len(CODEX_EVENTS),
                        "Run: pitwall install"))

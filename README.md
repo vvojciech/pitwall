@@ -77,7 +77,9 @@ git clone https://github.com/vvojciech/pitwall.git && cd pitwall && bin/pitwall 
 Then:
 
 1. In iTerm2, open **Settings > General > Magic** and turn on **Enable Python API**, if
-   `pitwall doctor` says it is off.
+   `pitwall doctor` says it is off. The first time Pitwall connects, iTerm2 asks whether to
+   allow it. Click **Allow**. Until you do, `pitwall doctor` reports that the service does not
+   answer.
 2. Open **View > Show Toolbelt**, then select **Toolbelt > Pitwall**.
 3. Start Codex once and approve Pitwall's hooks. Codex asks for every new hook.
 4. Optional: install iTerm2's shell integration (**iTerm2 > Install Shell Integration**) to

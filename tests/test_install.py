@@ -42,5 +42,19 @@ class EditHooksTests(unittest.TestCase):
         self.assertEqual(len(list(Path(self.tmp.name).glob("settings.json.pitwall-backup-*"))), 1)
 
 
+class FreshMacTests(unittest.TestCase):
+    def test_doctor_runs_without_claude_or_codex(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp, "nothing")
+            out = StringIO()
+            with mock.patch.object(install, "CLAUDE", missing / ".claude/settings.json"), \
+                    mock.patch.object(install, "CODEX", missing / ".codex/hooks.json"), redirect_stdout(out):
+                install.doctor()  # must not raise
+        self.assertNotIn("Claude Code hooks", out.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,7 @@ const LABELS = {
 };
 const ICON = {
   check: '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  pencil: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
   undo: '<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
   redo: '<svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>',
@@ -83,6 +84,19 @@ function undoPanel(s) {
     <button class="btn" data-act="undo-cancel">Cancel</button></div></div>`;
 }
 
+// Your name for the card, else the iTerm2 tab's own name, else the project folder.
+function cardName(s) {
+  const project = base(s.cwd) || s.title;
+  if (ui.renaming === s.sid) {
+    return `<input class="rename-input" data-rename="${esc(s.sid)}" data-stop value="${esc(s.name || s.tab_name || "")}"
+      placeholder="${esc(project)}" maxlength="60" aria-label="Name this agent" spellcheck="false">`;
+  }
+  const name = s.name || s.tab_name;
+  const shown = name ? `${esc(name)}${name !== project ? `<small>${esc(project)}</small>` : ""}` : esc(project);
+  return `<span class="project" title="Double-click to rename">${shown}</span>
+    <button class="icon-btn small rename" data-act="rename" aria-label="Rename" title="Rename">${ICON.pencil}</button>`;
+}
+
 function card(s) {
   const busy = ui.pending[s.sid] ? "disabled" : "";
   const waiting = s.state === "waiting_permission";
@@ -96,7 +110,7 @@ function card(s) {
   const tools = ui.undo[s.sid] ? "" : cardTools(s, busy);
   const screen = MISSION ? `<div class="screen">${esc(s.screen || "")}</div>` : "";
   return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}" title="Go to this tab">
-    <div class="head"><span class="dot"></span><span class="project">${esc(base(s.cwd) || s.title)}</span>
+    <div class="head"><span class="dot"></span>${cardName(s)}
       <span class="timer" ${timerAttr(s)}></span></div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
       <span class="state-label">${LABELS[s.state] || esc(s.state)}</span></div>
@@ -128,7 +142,7 @@ function render() {
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
-  const typing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
+  const typing = document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName);
   if (html !== ui.html && !typing) {
     $("cards").innerHTML = html;
     ui.html = html;
@@ -156,6 +170,7 @@ async function poll() {
 
 async function act(sid, name) {
   if (name === "undo-cancel") { delete ui.undo[sid]; return render(); }
+  if (name === "rename") return startRename(sid);
   ui.pending[sid] = true;
   render();
   try {
@@ -216,6 +231,37 @@ $("cards").addEventListener("change", (e) => {
   if (ui.raceForm && "raceRepo" in e.target.dataset) ui.raceForm.repo = e.target.value;
 });
 $("race").addEventListener("click", toggleRaceForm);
+
+// Rename: double-click the name or use the pencil. Enter or leaving the field saves, Escape cancels.
+function startRename(sid) {
+  ui.renaming = sid;
+  render();
+  const input = document.querySelector("[data-rename]");
+  if (input) { input.focus(); input.select(); }
+}
+
+async function finishRename(input, save) {
+  const sid = input.dataset.rename;
+  if (ui.renaming !== sid) return;
+  ui.renaming = null;
+  input.blur();
+  if (save) {
+    try { await api("/api/rename", { sid, name: input.value }); } catch (e) { toast(e.message); }
+  }
+  await poll();
+}
+
+$("cards").addEventListener("dblclick", (e) => {
+  const name = e.target.closest(".project");
+  const el = name && name.closest("[data-sid]");
+  if (el) startRename(el.dataset.sid);
+});
+$("cards").addEventListener("keydown", (e) => {
+  if (!e.target.dataset.rename) return;
+  if (e.key === "Enter") finishRename(e.target, true);
+  if (e.key === "Escape") finishRename(e.target, false);
+});
+$("cards").addEventListener("focusout", (e) => { if (e.target.dataset.rename) finishRename(e.target, true); });
 $("mission").addEventListener("click", () => api("/api/mission", {}).catch((err) => toast(err.message)));
 
 if (MISSION) document.body.classList.add("mission");

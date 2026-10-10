@@ -15,6 +15,19 @@ def agent_of(job):
     return next((a for a in AGENTS if job.startswith(a)), None)
 
 
+def layout_order(cards, windows):
+    """Sort cards as iTerm2 shows them: window by window, tab by tab, pane by pane.
+
+    `windows` is a list of windows, each a list of tabs, each a list of session ids.
+    """
+    rank = {}
+    for window in windows:
+        for tab in window:
+            for sid in tab:
+                rank.setdefault(sid, len(rank))
+    return sorted(cards, key=lambda c: rank.get(c["sid"], len(rank)))
+
+
 def is_shell(job):
     """True when the pane is back at a shell prompt. Other jobs, such as node, can be an agent."""
     return (job or "").rsplit("/", 1)[-1].lstrip("-") in ("zsh", "bash", "fish", "sh", "login", "nu")
@@ -68,7 +81,9 @@ def apply(sessions, event):
 
     s = sessions.get(sid)
     if s is None or (name == "SessionStart" and s["agent"] != event["agent"]):
+        kept = s and s.get("name")  # a name belongs to the pane, not to one agent run
         s = sessions[sid] = new_session(event)
+        s["name"] = kept
     s["updated"] = event["ts"]
     s["cwd"] = event.get("cwd") or s["cwd"]
     s["agent_session"] = event.get("agent_session") or s["agent_session"]

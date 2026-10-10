@@ -45,6 +45,18 @@ class EventTests(unittest.TestCase):
         self.assertEqual(e["action"], "Bash npm test")
 
 
+class LayoutOrderTests(unittest.TestCase):
+    def test_cards_follow_windows_tabs_and_panes(self):
+        from pitwall.state import layout_order
+        cards = [{"sid": s} for s in ("C", "A", "D", "B")]
+        windows = [[["A", "B"], ["C"]], [["D"]]]  # window > tab > panes
+        self.assertEqual([c["sid"] for c in layout_order(cards, windows)], ["A", "B", "C", "D"])
+
+    def test_unknown_panes_go_last(self):
+        from pitwall.state import layout_order
+        self.assertEqual([c["sid"] for c in layout_order([{"sid": "X"}, {"sid": "A"}], [[["A"]]])], ["A", "X"])
+
+
 class StateTests(unittest.TestCase):
     def run_events(self, *events):
         sessions = {}
@@ -113,6 +125,12 @@ class StateTests(unittest.TestCase):
         sessions = self.run_events(ev("UserPromptSubmit", {"prompt": "x"}))
         apply(sessions, ev("SessionStart", agent="codex"))
         self.assertEqual((sessions["ABC-123"]["agent"], sessions["ABC-123"]["state"]), ("codex", "idle"))
+
+    def test_a_name_stays_with_the_pane(self):
+        sessions = self.run_events(ev("SessionStart"))
+        sessions["ABC-123"]["name"] = "Checkout"
+        apply(sessions, ev("SessionStart", agent="codex"))
+        self.assertEqual(sessions["ABC-123"]["name"], "Checkout")
 
 
 if __name__ == "__main__":

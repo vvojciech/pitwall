@@ -19,7 +19,7 @@ import iterm2
 from pitwall import config, iterm, snapshot
 from pitwall.features import Features
 from pitwall.http import reply, serve
-from pitwall.state import apply, discover
+from pitwall.state import apply, discover, layout_order
 from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
@@ -28,7 +28,6 @@ STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; ch
           "/usage.js": "text/javascript; charset=utf-8", "/activity.js": "text/javascript; charset=utf-8",
           "/map.js": "text/javascript; charset=utf-8"}
 PAGES = {"/": "index.html", "/activity": "activity.html"}
-ORDER = {"waiting_permission": 0, "waiting_input": 1, "failed": 2, "working": 3, "done": 4, "idle": 5}
 BUSY = ("working", "waiting_permission")
 SCAN_SECONDS = 5
 
@@ -104,6 +103,9 @@ class Daemon:
         session = s and self.app.get_session_by_id(s["sid"])
         if not session:
             return reply(404, {"error": "That agent's tab is gone."})
+        if path == "/api/rename":
+            await self.rename(s, session, data.get("name"))
+            return reply(200, {"ok": True})
         if path == "/api/focus":
             await iterm.focus(self.app, session)
             return reply(200, {"ok": True})
@@ -151,14 +153,24 @@ class Daemon:
                 continue
             card = {k: v for k, v in s.items() if k != "snapshots"}
             writer = self.features.loops.writer_of(sid)
+            tab = session.tab
             card.update(title=session.name, focused=sid == self.focused, unseen=sid in self.unseen,
                         can_undo=bool(s["snapshots"]), can_redo=bool(s.get("redo")),
-                        reviews=writer and os.path.basename(writer.get("cwd") or ""))
+                        reviews=writer and os.path.basename(writer.get("cwd") or ""),
+                        tab_name=tab and await tab.async_get_variable("titleOverride") or None)
             if with_screen:
                 card["screen"] = await iterm.screen_text(session, 14)
             cards.append(card)
-        cards.sort(key=lambda c: (ORDER.get(c["state"], 9), -c["updated"]))
-        return {"now": time.time(), "sessions": cards, "failures": self.features.failure_cards()}
+        layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
+        return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards()}
+
+    async def rename(self, s, session, name):
+        """Name an agent's card and its iTerm2 tab. An empty name goes back to the defaults."""
+        name = " ".join((name or "").split())[:60]
+        s["name"] = name or None
+        if session.tab:
+            await session.tab.async_set_title(name)  # "" lets iTerm2 title the tab again
+        self.save()
 
     async def scan(self):
         """Add agents that fired no hook yet, and remove agents that quit without a SessionEnd."""

@@ -157,13 +157,15 @@ def _row(job, now):
     kind = "loop" if loop else "repeats" if job.get("recurring") else "once"
     nxt = job.get("at") or next_fire(job.get("schedule"), max(job.get("first_seen") or 0,
                                                               job.get("last_fired") or 0, now - GRACE))
+    expires = (job.get("first_seen") or now) + EXPIRY if job.get("recurring") else None
+    final = bool(expires and nxt and expires < nxt)  # Claude Code runs it one last time at expiry
+    nxt = expires if final else nxt
     schedule = job.get("schedule") or ""
     human = "One wake-up, timed by Claude" if job.get("at") else \
         job["human"] if job.get("human") and job["human"] != schedule else describe(schedule)
     return {"id": job["id"], "kind": kind, "text": prompt[len("/loop"):].strip() if loop else prompt,
             "next": nxt, "human": human, "reason": job.get("reason"),
-            "expires": (job.get("first_seen") or now) + EXPIRY if job.get("recurring") else None,
-            "stopping": bool(job.get("stopping"))}
+            "expires": expires, "final": final, "stopping": bool(job.get("stopping"))}
 
 
 def view(session, now):

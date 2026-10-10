@@ -112,9 +112,14 @@ function summary(list) {
   const background = list.reduce((sum, s) => sum + (s.background || []).length, 0);
   const jobs = list.flatMap((s) => s.schedules || []);
   const next = Math.min(...jobs.filter((j) => j.next && !j.stopping).map((j) => j.next));
-  const scheduled = jobs.length ? `${jobs.length} scheduled${isFinite(next) ? `, next <span data-until="${next}"></span>` : ""}` : "";
+  const scheduled = jobs.length ? `${jobs.length} scheduled${isFinite(next) ? ` · next <span data-until="${next}"></span>` : ""}` : "";
   const counts = [background && `${background} in background`, scheduled].filter(Boolean).join(" · ");
-  if ($("bgcount").dataset.html !== counts) { $("bgcount").innerHTML = counts; $("bgcount").dataset.html = counts; }
+  if ($("bgcount").dataset.html !== counts) {
+    $("bgcount").innerHTML = counts;
+    $("bgcount").dataset.html = counts;
+    $("bgcount").title = [background && `${background} background tasks`, jobs.length && `${jobs.length} scheduled prompts`]
+      .filter(Boolean).join(", ") + " across all agents";
+  }
   return parts.join(" · ") || (list.length ? "All quiet" : "");
 }
 
@@ -151,8 +156,9 @@ function tick() {
     el.textContent = since(Number(el.dataset.since)) + (el.dataset.suffix || "");
   });
   document.querySelectorAll("[data-until]").forEach((el) => {
-    el.textContent = until(Number(el.dataset.until));
-    el.classList.toggle("due", el.textContent === "due");
+    const text = until(Number(el.dataset.until));
+    el.textContent = (el.dataset.prefix || "") + text;
+    el.classList.toggle("due", text === "due");
   });
 }
 

@@ -48,7 +48,7 @@ SESSIONS = [
              "w1": {"id": "w1", "schedule": "0 0 1 1 *", "recurring": False, "prompt": "/loop check the deploy finished",
                     "at": NOW + 262, "reason": "Vercel builds take about four minutes"},
              "c1": {"id": "c1", "schedule": "7 3 * * *", "recurring": True, "prompt": "Re-run the link checker",
-                    "human": "Every day at 3:07 AM", "first_seen": NOW - 6.8 * 86400}}}, NOW),
+                    "human": "Every day at 3:07 AM", "first_seen": NOW - 7 * 86400 + 7380}}}, NOW),  # final run
          loop={"reviewer": "2", "reviewer_agent": "codex", "round": 1, "max": 3, "auto": False, "phase": "fixing",
                "pending": {"to": "writer", "text": "1. guide.md:41 says Node 18; v3 needs Node 20.\n\nCHANGES NEEDED"}}),
 ]

@@ -322,9 +322,9 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 
 /* Order switch: a second row of the sticky header */
 .bar { flex-wrap: wrap; row-gap: 8px; }
-.order { flex-basis: 100%; display: flex; align-items: center; gap: 8px; }
+.order { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .order > span { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
-.order .seg { flex: 1; margin: 0; max-width: 220px; }
+.order .seg { flex: 1 0 140px; margin: 0; max-width: 220px; }
 .order .seg button { height: 22px; }
 
 /* The panel is a full-height column, so the usage strip sits at the bottom even with few cards. */
@@ -346,14 +346,15 @@ body:not(.activity-page) > main { flex: 1 0 auto; align-content: start; }
 .sched-when { color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sched-when.due { color: var(--amber); font-weight: 600; }
 .sched-when.muted { color: var(--faint); }
-.sched-ends { margin-left: 6px; color: var(--amber); font-size: 10px; }
+.sched-when.final { color: var(--amber); }
 .sched-stop { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 5px;
   background: none; color: var(--faint); cursor: pointer; opacity: .55; }
 .sched-stop svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 2.4; fill: none; }
 .sched:hover .sched-stop, .sched-stop:focus-visible { opacity: 1; }
 .sched-stop:hover { color: var(--red); background: var(--red-bg); }
 .sched-stop:disabled { visibility: hidden; }
-.order .bgcount { margin-left: auto; color: var(--blue); font-size: 10.5px; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.order .bgcount { margin-left: auto; color: var(--blue); font-size: 10.5px; text-transform: none; letter-spacing: 0; white-space: nowrap;
+  flex-shrink: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }  /* wraps to its own line first */
 
 /* Context ring in the card head */
 .ring { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: none; }

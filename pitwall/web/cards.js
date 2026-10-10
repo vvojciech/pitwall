@@ -43,14 +43,16 @@ function until(ts) {
 }
 
 function scheduleRow(j) {
-  const ends = j.expires && j.expires - Date.now() / 1000 - ui.offset;
-  const tip = [j.human && `Schedule: ${j.human}`, j.reason && `Why: ${j.reason}`,
-    j.expires && `Claude Code deletes it ${new Date((j.expires - ui.offset) * 1000).toLocaleString()}`].filter(Boolean).join("\n");
+  const tip = [j.text, j.human && `Schedule: ${j.human}`, j.reason && `Why: ${j.reason}`,
+    j.expires && `Claude Code deletes it after its run at ${new Date((j.expires - ui.offset) * 1000).toLocaleString()}`]
+    .filter(Boolean).join("\n");
+  // The last run before the 7-day limit reads "last in 3h 05m", in amber.
+  const prefix = j.final ? ' data-prefix="last "' : "";
   const when = j.stopping ? `<span class="sched-when muted">stopping</span>`
-    : j.next ? `<span class="sched-when" data-until="${j.next}">${until(j.next)}</span>` : `<span class="sched-when muted">${esc(j.human)}</span>`;
-  const expiring = ends != null && ends < 86400 ? `<span class="sched-ends">ends in ${since(Date.now() / 1000 + ui.offset - ends)}</span>` : "";
+    : j.next ? `<span class="sched-when${j.final ? " final" : ""}" data-until="${j.next}"${prefix}>${j.final ? "last " : ""}${until(j.next)}</span>`
+    : `<span class="sched-when muted">${esc(j.human)}</span>`;
   return `<li class="sched ${esc(j.kind)}" title="${esc(tip)}"><span class="bg-type">${esc(j.kind)}</span>
-    <span class="bg-desc">${esc(j.text)}${expiring}</span>${when}
+    <span class="bg-desc">${esc(j.text)}</span>${when}
     <button class="sched-stop" data-act="sched-stop" data-id="${esc(j.id)}" aria-label="Stop this scheduled job"
       title="Stop this scheduled job"${j.stopping ? " disabled" : ""}>${ICON.x}</button></li>`;
 }

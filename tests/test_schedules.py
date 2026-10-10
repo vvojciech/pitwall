@@ -95,6 +95,12 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(rows[0]["expires"], self.NOW - 100 + 7 * 86400)
         self.assertIsNone(rows[1]["expires"])
 
+    def test_a_job_that_expires_first_counts_down_to_its_final_run(self):  # it fires once more, then goes
+        row = view(session(job("a", "7 3 * * *", first_seen=self.NOW - 7 * 86400 + 3600)), self.NOW)[0]
+        self.assertEqual(row["next"], self.NOW + 3600)
+        self.assertTrue(row["final"])
+        self.assertFalse(view(session(job("b", "0 * * * *", first_seen=self.NOW)), self.NOW)[0]["final"])
+
     def test_bad_schedule_has_no_countdown(self):
         row = view(session(job("a", "every tuesday")), self.NOW)[0]
         self.assertIsNone(row["next"])

@@ -14,6 +14,7 @@ import iterm2
 
 from pitwall import config, handoff, ports, snapshot, timeline
 from pitwall.http import reply
+from pitwall.snapshot import repo_root, same_project
 
 HANDOFFS = config.HOME / "handoffs"
 LOGS = config.HOME / "logs"
@@ -24,11 +25,6 @@ OUTPUT_LINES = 40
 def _paste(text):
     """Bracketed paste, so a multi-line message arrives as one prompt."""
     return f"\x1b[200~{text}\x1b[201~"
-
-
-def _same_project(a, b):
-    a, b = (a or "").rstrip("/") + "/", (b or "").rstrip("/") + "/"
-    return a.startswith(b) or b.startswith(a)
 
 
 class Features:
@@ -67,11 +63,11 @@ class Features:
         for f in self.failures:
             agent = self.agent_for(f["cwd"])
             out.append(dict(f, agent_sid=agent and agent["sid"], agent=agent and agent["agent"],
-                            project=os.path.basename(f["cwd"].rstrip("/"))))
+                            project=os.path.basename((repo_root(f["cwd"]) or f["cwd"]).rstrip("/"))))
         return out[::-1]
 
     def agent_for(self, cwd):
-        matches = [s for s in self.d.sessions.values() if s.get("cwd") and _same_project(s["cwd"], cwd)]
+        matches = [s for s in self.d.sessions.values() if s.get("cwd") and same_project(s["cwd"], cwd)]
         return max(matches, key=lambda s: s["updated"], default=None)
 
     # Launching agents ----------------------------------------------------------------------
@@ -124,7 +120,7 @@ class Features:
     def handoff_text(self, s, mode):
         first = s["snapshots"][0] if s["snapshots"] else None
         diff = snapshot.diff(first["root"], first["tree"]) if first else None
-        failures = [f for f in self.failures if _same_project(f["cwd"], s["cwd"])]
+        failures = [f for f in self.failures if same_project(f["cwd"], s["cwd"])]
         return handoff.build(s, mode if mode in handoff.MODES else "continue",
                              timeline.read(s, Path.home(), 30), diff, failures)
 

@@ -5,6 +5,7 @@ The real index is never touched; every step uses a temporary index.
 """
 from __future__ import annotations
 
+import functools
 import os
 import shutil
 import subprocess
@@ -39,6 +40,22 @@ def _write_tree(root):
     finally:
         if os.path.exists(index):
             os.remove(index)
+
+
+@functools.lru_cache(maxsize=512)
+def repo_root(path):
+    """The git work tree that holds path, or None."""
+    # ponytail: cached for the daemon's life; a folder that becomes a repo later needs a restart
+    try:
+        return _git(path, "rev-parse", "--show-toplevel").strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def same_project(a, b):
+    """True when both folders are in the same git work tree."""
+    root = a and repo_root(a)
+    return bool(root) and root == (b and repo_root(b))
 
 
 def take(cwd):

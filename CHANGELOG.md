@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- An **Update** button shows in the top bar of the panel when a newer Pitwall is on GitHub. It runs
+  `pitwall update`, and the panel comes back by itself. Pitwall checks with `git fetch` every 6
+  hours; `launchctl setenv PITWALL_UPDATE_CHECK 0` turns the check off.
+- Fixed: `pitwall update` ran the old installer after it pulled the new code. (#3)
+- `pitwall install` no longer says it creates the venv when the venv is already there.
 - Fixed: the panel and the activity page showed empty Codex rows on a Mac without Codex. They
   now show only the agents that are installed. (#2)
 

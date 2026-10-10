@@ -80,6 +80,8 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 - **Shared memory.** Codex starts with Claude Code's notes for the project, and Claude Code
   starts with Codex's.
 - **Rename agents.** Double-click a name. The tab takes the same name.
+- **One-click updates.** When a newer Pitwall is on GitHub, an **Update** button shows in the
+  top bar.
 
 <p align="center"><img src="docs/images/activity.png" alt="The activity page: totals, agent time per day for Claude and Codex, plan limits and projects"></p>
 
@@ -130,8 +132,12 @@ Then:
 | Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
 | Keeps state, logs and caches in `~/.pitwall/`. | Delete the folder |
 
-Settings: `PITWALL_SHARED_MEMORY=0` turns off shared memory. Set it in the environment that
-starts your agents.
+Settings:
+
+- `PITWALL_SHARED_MEMORY=0` turns off shared memory. Set it in the environment that starts your
+  agents.
+- `launchctl setenv PITWALL_UPDATE_CHECK 0`, then `pitwall install`, turns off the check for a
+  newer version.
 
 ## How it works
 
@@ -151,7 +157,9 @@ starts your agents.
 ## Security and privacy
 
 - **Nothing leaves your Mac.** There is no account, server or telemetry. Usage numbers come from
-  the transcripts that Claude Code and Codex already keep on disk.
+  the transcripts that Claude Code and Codex already keep on disk. The only network call is a
+  `git fetch` from GitHub every 6 hours, to show the **Update** button when a newer version is
+  out. It sends nothing about you or your agents.
 - **Only you can use the service.** It listens on `127.0.0.1` only. It makes a new random token
   at each start and refuses each request without it. The token is in `~/.pitwall/daemon.json`,
   which only your user can read, so a web page or another user cannot drive your agents.

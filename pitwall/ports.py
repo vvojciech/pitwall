@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 
 
@@ -48,6 +49,52 @@ def listeners(lsof_text, cwds, home, skip_pid=None):
             found.append({"pid": pid, "port": port, "command": (f.get("c") or ["?"])[0], "cwd": cwd,
                           "project": project_name(cwd)})
     return sorted(found, key=lambda p: p["port"])
+
+
+IN_USE = re.compile(r"EADDRINUSE|address already in use|\bis (?:already )?in use", re.I)
+PORT_WORD = re.compile(r"\bport\s+(\d{2,5})\b", re.I)
+PORT_COLON = re.compile(r":(\d{2,5})\b")
+
+
+PORT_ARG = re.compile(r"(?:--port[= ]|-p |\bPORT=)(\d{2,5})\b|(?:^|\s)(\d{4,5})(?=\s|$)")
+
+
+def busy_port(output, command=""):
+    """The port from an 'address already in use' error, or None.
+
+    Some errors (Python's) do not name the port; then the port comes from the command.
+    """
+    in_use = False
+    for line in output.splitlines():
+        if not IN_USE.search(line):
+            continue
+        in_use = True
+        word = PORT_WORD.search(line)
+        if word:
+            return int(word.group(1))
+        colons = PORT_COLON.findall(line)
+        if colons:
+            return int(colons[-1])
+    arg = in_use and PORT_ARG.search(command)
+    return int(arg.group(1) or arg.group(2)) if arg else None
+
+
+def holders(lsof_text, port):
+    """The processes listening on port, from `lsof -Fpcn` output."""
+    return [{"pid": pid, "command": (f.get("c") or ["?"])[0]} for pid, f in _records(lsof_text)
+            if any(n.rsplit(":", 1)[-1] == str(port) for n in f.get("n", []))]
+
+
+def holder_of(port):
+    text = subprocess.run(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-Fpcn"],
+                          capture_output=True, text=True).stdout
+    found = holders(text, port)
+    if not found:
+        return None
+    holder = found[0]
+    cwd = parse_cwds(subprocess.run(["lsof", "-nP", "-a", "-d", "cwd", "-p", str(holder["pid"]), "-Fpn"],
+                                    capture_output=True, text=True).stdout).get(holder["pid"], "")
+    return dict(holder, port=port, project=project_name(cwd) if cwd not in ("", "/") else "")
 
 
 def scan(home):

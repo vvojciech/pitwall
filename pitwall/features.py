@@ -53,9 +53,12 @@ class Features:
         end = prompt.output_range.end.y
         first = max(prompt.output_range.start.y, end - OUTPUT_LINES)
         lines = await session.async_get_contents(first, end - first) if end > first else []
+        output = "\n".join(l.string for l in lines).rstrip()
+        port = ports.busy_port(output, prompt.command)
         self.failures.append({"id": self.next_id, "pane": sid, "command": prompt.command.strip(),
                               "status": message.command_end.status, "cwd": prompt.working_directory or "",
-                              "output": "\n".join(l.string for l in lines).rstrip(), "ts": time.time()})
+                              "output": output, "ts": time.time(),
+                              "busy": port and await asyncio.to_thread(ports.holder_of, port)})
         self.next_id += 1
 
     def failure_cards(self):
@@ -130,6 +133,15 @@ class Features:
             return reply(404, {"error": "That failure is gone."})
         if path == "/api/failures/dismiss":
             self.failures.remove(f)
+            return reply(200, {"ok": True})
+        if path == "/api/failures/free-port":
+            busy = f.get("busy")
+            now = busy and await asyncio.to_thread(ports.holder_of, busy["port"])
+            if not now or now["pid"] != busy["pid"]:
+                f["busy"] = None
+                return reply(409, {"error": "That process no longer holds the port. Run the command again."})
+            os.kill(busy["pid"], signal.SIGTERM)
+            f["busy"] = None
             return reply(200, {"ok": True})
         if path == "/api/failures/send":
             agent = self.agent_for(f["cwd"])

@@ -56,9 +56,17 @@ function failuresSection(list) {
     return `<div class="failure"><div class="head"><span class="fcmd">${esc(f.command)}</span>
         <button class="icon-btn small" data-fail="dismiss" data-id="${f.id}" aria-label="Dismiss">${ICON.x}</button></div>
       <div class="meta">exit ${f.status} · ${esc(f.project || f.cwd)}</div>
-      <pre>${esc(f.output.split("\n").slice(-4).join("\n"))}</pre><div class="row">${actions}</div></div>`;
+      <pre>${esc(f.output.split("\n").slice(-4).join("\n"))}</pre>${busyPort(f)}<div class="row">${actions}</div></div>`;
   }).join("");
   return `<section class="group"><h2>Failed commands</h2>${rows}</section>`;
+}
+
+function busyPort(f) {
+  const b = f.busy;
+  if (!b) return "";
+  const who = `${esc(b.command)}${b.project ? ` in ${esc(b.project)}` : ""}`;
+  return `<div class="busy"><span>Port <b>${b.port}</b> is held by ${who} (pid ${b.pid}).</span>
+    <button class="btn danger" data-fail="free-port" data-id="${f.id}">${MORE_ICON.stop}Stop it</button></div>`;
 }
 
 function portsSection() {
@@ -116,8 +124,10 @@ async function failureAct(button) {
   const id = Number(button.dataset.id);
   button.disabled = true;
   try {
-    await api(`/api/failures/${button.dataset.fail}`, { id, to: button.dataset.to });
-    if (button.dataset.fail !== "dismiss") toast("Sent. The agent has the command and its output.");
+    const kind = button.dataset.fail;
+    await api(`/api/failures/${kind}`, { id, to: button.dataset.to });
+    if (kind === "free-port") toast("Stopped. Run your command again.");
+    else if (kind !== "dismiss") toast("Sent. The agent has the command and its output.");
   } catch (e) { toast(e.message); }
   await poll();
 }

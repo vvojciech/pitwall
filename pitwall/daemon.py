@@ -18,13 +18,14 @@ import iterm2
 
 from pitwall import config, iterm, snapshot
 from pitwall.http import reply, serve
-from pitwall.state import apply
+from pitwall.state import apply, discover
 from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
 STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8"}
 ORDER = {"waiting_permission": 0, "waiting_input": 1, "failed": 2, "working": 3, "done": 4, "idle": 5}
 BUSY = ("working", "waiting_permission")
+SCAN_SECONDS = 5
 
 
 class Daemon:
@@ -134,8 +135,7 @@ class Daemon:
         cards = []
         for sid, s in list(self.sessions.items()):
             session = self.app.get_session_by_id(sid)
-            if session is None:
-                del self.sessions[sid]
+            if session is None:  # the scan removes cards; layout data can lag for a moment
                 continue
             card = {k: v for k, v in s.items() if k != "snapshots"}
             card.update(title=session.name, focused=sid == self.focused, unseen=sid in self.unseen,
@@ -145,6 +145,33 @@ class Daemon:
             cards.append(card)
         cards.sort(key=lambda c: (ORDER.get(c["state"], 9), -c["updated"]))
         return {"now": time.time(), "sessions": cards}
+
+    async def scan(self):
+        """Add agents that fired no hook yet, and remove agents that quit without a SessionEnd."""
+        panes = []
+        for window in self.app.terminal_windows:
+            for tab in window.tabs:
+                for session in tab.sessions:
+                    panes.append({"sid": session.session_id,
+                                  "job": await session.async_get_variable("jobName"),
+                                  "cwd": await session.async_get_variable("path")})
+        before = set(self.sessions)
+        added = discover(self.sessions, panes, time.time())
+        for sid in before - set(self.sessions):
+            self.unseen.discard(sid)
+            await self.tabs.show({"sid": sid, "state": "idle"}, self.unseen)
+        for sid in added:
+            self.changed(self.sessions[sid])
+        if added or before != set(self.sessions):
+            self.save()
+
+    async def scan_forever(self):
+        while True:
+            try:
+                await self.scan()
+            except Exception as e:  # noqa: BLE001  a failed scan must not stop the daemon
+                print(f"pitwall: scan failed: {e}", flush=True)
+            await asyncio.sleep(SCAN_SECONDS)
 
 
 def focused_session(app, update):
@@ -175,6 +202,7 @@ async def main(connection):
     for s in daemon.sessions.values():
         await daemon.tabs.show(s, daemon.unseen)
         daemon.status.write(s)
+    asyncio.get_running_loop().create_task(daemon.scan_forever())
     print(f"pitwall: listening on 127.0.0.1:{port}", flush=True)
     async with iterm2.FocusMonitor(connection) as monitor:
         daemon.on_focus(focused_session(app, iterm2.FocusUpdate()))

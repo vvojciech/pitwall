@@ -19,6 +19,14 @@ const ICON = {
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const base = (p) => (p || "").replace(/\/+$/, "").split("/").pop() || p || "";
 
+// The prompt without image placeholders, else the title Claude gave the tab ("✳ Fix login (claude)").
+function taskText(s) {
+  const prompt = (s.task || "").replace(/\[Image #\d+\]/g, "").trim();
+  if (prompt) return prompt;
+  const title = (s.title || "").replace(/^[^\p{L}\p{N}]+/u, "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+  return ["Chat", "Claude Code", "Codex"].includes(title) ? "" : title;
+}
+
 function since(ts) {
   const s = Math.max(0, Math.floor(Date.now() / 1000 + ui.offset - ts));
   if (s < 60) return `${s}s`;
@@ -73,7 +81,8 @@ function undoPanel(s) {
 function card(s) {
   const busy = ui.pending[s.sid] ? "disabled" : "";
   const waiting = s.state === "waiting_permission";
-  const task = s.task ? `<div class="task">${esc(s.task)}</div>` : `<div class="task empty">No prompt yet</div>`;
+  const text = taskText(s);
+  const task = text ? `<div class="task">${esc(text)}</div>` : `<div class="task empty">No task yet</div>`;
   const action = s.action && s.state !== "done" ? `<div class="action">${esc(s.action)}</div>` : "";
   const ask = waiting ? `<div class="ask" data-stop>
       ${s.permission ? `<div class="what">${esc(s.permission)}</div>` : ""}

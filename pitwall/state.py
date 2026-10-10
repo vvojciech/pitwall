@@ -5,6 +5,41 @@ MAX_SNAPSHOTS = 20
 WAITING = ("waiting_permission", "waiting_input")
 
 
+AGENTS = ("claude", "codex")
+MISSING_SCANS = 2  # iTerm2's layout data can miss a pane for a moment; wait for a second scan
+
+
+def agent_of(job):
+    """'claude', 'codex' or None for a pane's job name, such as 'claude' or 'codex-x86'."""
+    job = (job or "").rsplit("/", 1)[-1].lower()
+    return next((a for a in AGENTS if job.startswith(a)), None)
+
+
+def is_shell(job):
+    """True when the pane is back at a shell prompt. Other jobs, such as node, can be an agent."""
+    return (job or "").rsplit("/", 1)[-1].lstrip("-") in ("zsh", "bash", "fish", "sh", "login", "nu")
+
+
+def discover(sessions, panes, ts):
+    """Sync the cards with a scan of all panes. Returns the sids of new cards."""
+    added = []
+    seen = {p["sid"] for p in panes}
+    for p in panes:
+        agent = agent_of(p.get("job"))
+        if agent and p["sid"] not in sessions:
+            sessions[p["sid"]] = new_session({"sid": p["sid"], "agent": agent, "cwd": p.get("cwd"), "ts": ts})
+            added.append(p["sid"])
+        elif p["sid"] in sessions and is_shell(p.get("job")):
+            del sessions[p["sid"]]  # the agent quit without a SessionEnd
+    for sid in [sid for sid in sessions if sid not in seen]:
+        sessions[sid]["missing"] = sessions[sid].get("missing", 0) + 1
+        if sessions[sid]["missing"] >= MISSING_SCANS:
+            del sessions[sid]
+    for sid in seen & set(sessions):
+        sessions[sid]["missing"] = 0
+    return added
+
+
 def new_session(event):
     return {
         "sid": event["sid"],

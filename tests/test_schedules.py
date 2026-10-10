@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 
-from pitwall.schedules import GRACE, next_fire, parse, view
+from pitwall.schedules import GRACE, next_fire, parse, stop_message, view
 
 
 def ts(*args):
@@ -102,3 +102,20 @@ class ViewTests(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(view({}, self.NOW), [])
+
+    def test_stopping_shows(self):
+        self.assertTrue(view(session(job("a", "0 * * * *", stopping=True)), self.NOW)[0]["stopping"])
+
+
+class StopMessageTests(unittest.TestCase):
+    def test_a_job_is_deleted_by_id(self):
+        text = stop_message(job("a3ecd9af", "7 3 * * *", "nightly check"))
+        self.assertIn("CronDelete", text)
+        self.assertIn("a3ecd9af", text)
+        self.assertNotIn("ScheduleWakeup", text)
+
+    def test_a_loop_also_stops_its_wakeups(self):
+        text = stop_message(job("84336790", "56 21 * * *", "/loop check the time", recurring=False))
+        self.assertIn("84336790", text)
+        self.assertIn("ScheduleWakeup", text)
+        self.assertIn("stop", text)

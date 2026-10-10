@@ -16,7 +16,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import __version__, config, context, iterm, questions, snapshot, updates
+from pitwall import __version__, config, context, iterm, questions, schedules, snapshot, updates
 from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
@@ -164,12 +164,13 @@ class Daemon:
         return reply(200, {"ok": True})
 
     async def state(self):
-        cards = []
+        cards, now = [], time.time()
         for sid, s in list(self.sessions.items()):
             session = self.app.get_session_by_id(sid)
             if session is None:  # the scan removes cards; layout data can lag for a moment
                 continue
-            card = {k: v for k, v in s.items() if k != "snapshots"}
+            card = {k: v for k, v in s.items() if k not in ("snapshots", "wakeup")}
+            card["schedules"] = schedules.view(s, now)
             writer = self.features.loops.writer_of(sid)
             tab = session.tab
             card.update(title=session.name, focused=sid == self.focused, unseen=sid in self.unseen,
@@ -179,7 +180,7 @@ class Daemon:
                         context=context.for_session(s, config.HOME, Path.home()))
             cards.append(card)
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
-        return {"now": time.time(), "sessions": layout_order(cards, layout), "failures": self.features.failure_cards(),
+        return {"now": now, "sessions": layout_order(cards, layout), "failures": self.features.failure_cards(),
                 "version": __version__, "update": self.update if self.update and self.update["behind"] else None}
 
     async def rename(self, s, session, name):

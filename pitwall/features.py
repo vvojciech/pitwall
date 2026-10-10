@@ -11,7 +11,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, handoff, mapdata, ports, snapshot, timeline, usage
+from pitwall import config, handoff, mapdata, ports, schedules, snapshot, timeline, usage
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
@@ -96,6 +96,17 @@ class Features:
         await asyncio.sleep(0.2)  # let the agent finish reading the paste before Enter
         await session.async_send_text("\r")
 
+    async def stop_schedule(self, s, job_id):
+        """Ask the agent to cancel one of its scheduled jobs. The next Stop report drops it."""
+        job = s and (s.get("schedules") or {}).get(job_id)
+        session = s and self.d.app.get_session_by_id(s["sid"])
+        if not job or session is None:
+            return reply(404, {"error": "That scheduled job is gone."})
+        await self.paste(session, schedules.stop_message(job))
+        job["stopping"] = True
+        self.d.save()
+        return reply(200, {"ok": True})
+
     # Routes --------------------------------------------------------------------------------
 
     async def route(self, method, path, query, data):
@@ -121,6 +132,8 @@ class Features:
         s = self.d.sessions.get(data.get("sid") or query.get("sid", ""))
         if path.startswith("/api/loop/"):
             return await self.loop_route(path, s, data)
+        if path == "/api/schedule/stop":
+            return await self.stop_schedule(s, data.get("id"))
         if path in ("/api/timeline", "/api/handoff", "/api/map") and not s:
             return reply(404, {"error": "That agent's tab is gone."})
         if path == "/api/map":

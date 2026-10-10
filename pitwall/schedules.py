@@ -115,6 +115,14 @@ def apply(s, event):
                 del jobs[key]
 
 
+def stop_message(job):
+    """What Pitwall types into the tab to stop a job. Claude Code has no outside API for it."""
+    text = f"Cancel the scheduled job {job['id']} with CronDelete."
+    if _is_loop(job):
+        text += " It drives a /loop: also call ScheduleWakeup with stop: true, and do not schedule it again."
+    return text + " Reply with one short line."
+
+
 def _row(job, now):
     prompt = job.get("prompt") or ""
     loop = prompt.startswith("/loop")

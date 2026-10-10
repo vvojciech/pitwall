@@ -62,6 +62,12 @@ def preview(root, tree):
     return list(_diff(root, tree, _write_tree(root)))
 
 
+def diff(root, tree):
+    """The patch from the snapshot to the work tree now, new untracked files included."""
+    current = _write_tree(root)
+    return _git(root, "diff", "--stat", tree, current) + "\n" + _git(root, "diff", tree, current)
+
+
 def restore(root, tree):
     """Put the work tree back to the snapshot. Returns a snapshot of the state before it."""
     current = _write_tree(root)

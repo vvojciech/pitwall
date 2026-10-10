@@ -72,6 +72,7 @@ def apply(sessions, event):
     s["updated"] = event["ts"]
     s["cwd"] = event.get("cwd") or s["cwd"]
     s["agent_session"] = event.get("agent_session") or s["agent_session"]
+    s["transcript"] = event.get("transcript") or s.get("transcript")
 
     if name == "UserPromptSubmit":
         s.update(state="working", task=event.get("task") or s["task"], started=event["ts"],

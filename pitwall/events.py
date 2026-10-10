@@ -38,6 +38,7 @@ def to_event(agent, name, payload, env, ts):
         "ts": ts,
         "cwd": payload.get("cwd") or env.get("PWD"),
         "agent_session": payload.get("session_id"),
+        "transcript": payload.get("transcript_path"),
     }
     if name == "UserPromptSubmit":
         prompt = first_line(payload.get("prompt"))

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1 (2026-10-10)
+
+- Background tasks and scheduled prompts show an icon for their kind instead of a word, so a
+  narrow panel shows more of each prompt. Hover an icon for its name.
+- The top bar shows the counts as icons: background tasks, scheduled prompts and the time to the
+  next run. It fits on one line again at the usual panel width.
+
 ## 0.7.0 (2026-10-10)
 
 - **Scheduled prompts** on each Claude Code card: `/loop` wake-ups, repeating jobs and one-shot

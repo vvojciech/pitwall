@@ -1,7 +1,7 @@
-"""The code map: a project's folders and the files an agent touched this turn, laid out radially.
+"""The code map: the files an agent works on, laid out radially around the project root.
 
-Overview shows the top two folder levels and every touched file with its folders. Files mode
-also shows the other files beside the touched ones. Positions are in the unit circle.
+Only the work is drawn: files read, edited or changed, the folders on their paths, and the files
+that import an edit. Positions are in the unit circle.
 """
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ import math
 import os
 import posixpath
 import re
+
+from pitwall.imports import JS
 
 CATEGORIES = (
     ("tests", {"test", "tests", "__tests__", "spec", "specs", "e2e", "cypress", "playwright"}),
@@ -21,9 +23,8 @@ CATEGORIES = (
     ("docs", {"docs", "doc", "documentation"}),
 )
 TEST_FILE = re.compile(r"(\.|_)(test|spec)\.\w+$|^test_.+\.py$")
-OVERVIEW_DEPTH = 2
-FILES_DEPTH = 3
-MAX_NODES = 400
+MAX_NODES = 200  # files; a sweeping change (a rename across the repo) is cut to keep the map legible
+CODE = (*JS, ".py")  # files that tests import; only these can be "not reached by a test"
 
 
 def category(path, is_file=True):
@@ -47,16 +48,22 @@ def _depth(path):
     return 0 if path == "" else path.count("/") + 1
 
 
-def build(root, files, touched, current, importers, mode="overview"):
-    """The map as {nodes, edges, imports, stats}. `touched` maps absolute paths to read or edit."""
+def build(root, files, touched, current, importers, changed=()):
+    """The map of the work: touched and changed files, the folders on their paths, and dependents.
+
+    `touched` maps absolute paths to read or edit (from the agent's hooks). `changed` lists repo
+    paths that git sees as changed, so edits made through shell commands show up too.
+    """
     rel = {}
     for path, kind in (touched or {}).items():
         r = os.path.relpath(path, root)
         if not r.startswith(".."):
             rel[r] = kind
+    opened = set(rel)
+    for path in changed:
+        rel[path] = "edit"  # a change on disk is an edit, whatever the hooks saw
     cur = current and os.path.relpath(current, root)
-    files_set = set(files)
-    folders = {a for f in files for a in _ancestors(f)}
+    files_set = set(files) | set(changed)  # a deleted file is a change too
     count = {}
     for f in files:
         for a in ["", *_ancestors(f)]:
@@ -66,16 +73,9 @@ def build(root, files, touched, current, importers, mode="overview"):
     edited = {f for f, k in rel.items() if k == "edit" and f in files_set}
     radius_of = edited | ({cur} if cur in files_set else set())
     dependents = {d for f in radius_of for d in importers.get(f, [])} - hot
-    limit = FILES_DEPTH if mode == "files" else OVERVIEW_DEPTH
-    shown = {""} | {d for d in folders if _depth(d) <= limit}
-    for f in hot | dependents:
+    shown = {""}
+    for f in sorted(hot | dependents)[:MAX_NODES]:
         shown |= {f, *_ancestors(f)}
-    if mode == "files":
-        hot_folders = {posixpath.dirname(f) for f in hot}
-        shown |= {f for f in files if posixpath.dirname(f) in hot_folders}
-    if len(shown) > MAX_NODES:  # fold the quiet folders of a large repo
-        keep = {a for f in hot | dependents for a in ["", *_ancestors(f), f]}
-        shown = {n for n in shown if n in keep or _depth(n) <= 1}
 
     children = {}
     for n in sorted(shown - {""}, key=lambda p: (p in files_set, p.lower())):
@@ -107,7 +107,10 @@ def build(root, files, touched, current, importers, mode="overview"):
               "current": n == cur, "dependent": n in dependents} for n in sorted(shown)]
     edges = [{"from": posixpath.dirname(n), "to": n} for n in sorted(shown - {""})]
     imports = [{"from": d, "to": f} for f in sorted(radius_of) for d in importers.get(f, []) if d in shown]
-    untested = sorted(f for f in edited if category(f) != "tests"
+    untested = sorted(f for f in edited if f.endswith(CODE) and category(f) != "tests"
                       and not any(category(d) == "tests" for d in importers.get(f, [])))
-    stats = {"files": len(files), "visited": len(hot), "edited": len(edited), "untested": untested}
+    reads = {f for f in hot if rel.get(f) == "read"}
+    visited = {f for f in hot if f in opened}  # files the agent itself opened, read or edited
+    stats = {"files": len(files), "visited": len(visited), "read": len(reads), "edited": len(edited),
+             "untested": untested}
     return {"nodes": nodes, "edges": edges, "imports": imports, "stats": stats}

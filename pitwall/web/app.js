@@ -2,7 +2,7 @@
 const params = new URLSearchParams(location.search);
 const TOKEN = params.get("t") || "";
 const $ = (id) => document.getElementById(id);
-const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: { sid: null, mode: "overview", data: null }, ports: [], stopping: null };
+const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: { sid: null, mode: "turn", data: null }, ports: [], stopping: null };
 
 const LABELS = {
   working: "Working", waiting_permission: "Needs permission", waiting_input: "Waiting for you",

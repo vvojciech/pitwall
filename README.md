@@ -26,9 +26,11 @@ this for Ghostty.
   a sub-agent, a monitor or a scheduled wake-up), the card lists it, and the header counts it.
 - **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
   finishes or fails, until you look at it.
-- **Code map.** The project of the agent in your active tab, as a star map: folders by type, the
-  files the agent read and edited this turn, the file it works on now, and the files that import
-  an edit. It switches when you change tabs.
+- **Code map.** A map of the work of the agent in your active tab, not of the whole project: the
+  files it read and edited, the file it works on now, and the files that import an edit (with a
+  warning when no test imports it). "This turn" counts what changed since the last prompt, also
+  through shell commands; "Uncommitted" shows everything that differs from the last commit. It
+  switches when you change tabs.
 - **Timeline.** The agent's prompts, thinking, replies, tool calls and sub-agents.
 
 **Steer them**

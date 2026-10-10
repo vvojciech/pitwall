@@ -25,11 +25,14 @@ function mapSection(list) {
     loadMap().then(render).catch(() => {});
   }
   const m = ui.map;
-  const modes = [["overview", "Overview"], ["files", "Files"]].map(([v, l]) =>
+  const modes = [["turn", "This turn"], ["uncommitted", "Uncommitted"]].map(([v, l]) =>
     `<button class="${m.mode === v ? "on" : ""}" data-map-mode="${v}">${l}</button>`).join("");
   let body;
-  if (!m.data) body = `<p class="map-note">Reading the project…</p>`;
+  if (!m.data) body = `<p class="map-note">Reading the changes…</p>`;
   else if (m.data.error) body = `<p class="map-note">${esc(m.data.error)}</p>`;
+  else if (m.data.nodes.length < 2) {
+    body = `<p class="map-note">${m.mode === "turn" ? "Nothing read or changed in this turn yet." : "No uncommitted changes."}</p>`;
+  }
   else body = mapChips(m.data) + mapSvg(m.data, s) + mapLegend(m.data);
   const who = esc(s.name || s.tab_name || base(s.cwd));
   return `<section class="group"><h2 class="split">Map · ${who}<span class="map-follow">${s.focused ? "active tab" : "last active"}</span></h2>
@@ -38,16 +41,16 @@ function mapSection(list) {
 
 function mapChips(d) {
   const st = d.stats;
-  const turn = st.added || st.removed ? `<span class="chip"><span class="add">+${st.added}</span> <span class="del">−${st.removed}</span> this turn</span>` : "";
+  const lines = st.added || st.removed ? `<span class="chip"><span class="add">+${st.added}</span> <span class="del">−${st.removed}</span> lines</span>` : "";
   const untested = st.untested.length
     ? `<span class="chip warn" title="${esc(st.untested.join("\n"))}">${st.untested.length} edit${st.untested.length > 1 ? "s" : ""} no test imports</span>` : "";
   const deps = depCount(d);
   const radius = deps ? `<span class="chip dep" title="${esc(d.nodes.filter((n) => n.dependent).map((n) => n.id).join("\n"))}"><b>${deps}</b> file${deps > 1 ? "s" : ""} import the edited code</span>` : "";
-  return `<div class="chips"><span class="chip"><b>${fmtCount(st.files)}</b> files</span><span class="chip"><b>${st.visited}</b> visited</span>
-    <span class="chip"><b>${st.edited}</b> edited</span>${turn}${radius}${untested}</div>`;
+  const chip = (n, label) => `<span class="chip"><b>${n}</b> ${label}</span>`;
+  const opened = st.visited ? chip(st.visited, "visited") + chip(st.read, "read") : "";
+  return `<div class="chips">${chip(st.edited, "changed")}${opened}${lines}${radius}${untested}</div>`;
 }
 
-const fmtCount = (n) => n.toLocaleString("en-US");
 
 function mapSvg(d, s) {
   const S = 300, PAD = 30;
@@ -133,7 +136,7 @@ async function pollMaps() {
 }
 
 function setMapMode(mode) {
-  ui.map.mode = mode === "files" ? "files" : "overview";
+  ui.map.mode = mode === "uncommitted" ? "uncommitted" : "turn";
   ui.map.data = null;
   render();
   loadMap().then(render).catch(() => {});

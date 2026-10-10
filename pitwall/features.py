@@ -128,7 +128,7 @@ class Features:
         if path in ("/api/timeline", "/api/handoff", "/api/map") and not s:
             return reply(404, {"error": "That agent's tab is gone."})
         if path == "/api/map":
-            mode = "files" if query.get("mode") == "files" else "overview"
+            mode = "uncommitted" if query.get("mode") == "uncommitted" else "turn"
             return reply(200, await asyncio.to_thread(mapdata.map_for, s, mode))
         if path == "/api/timeline":
             return reply(200, {"items": await asyncio.to_thread(timeline.read, s, Path.home(), 60)})

@@ -68,7 +68,10 @@ def activity(days):
 def code_map(mode):
     touched = {f"{SHOP}/src/lib/cart.ts": "edit", f"{SHOP}/src/components/CartSummary.tsx": "edit",
                f"{SHOP}/src/lib/money.ts": "read", f"{SHOP}/README.md": "read"}
-    g = build(SHOP, FILES, touched, f"{SHOP}/src/components/CartSummary.tsx", IMPORTERS, mode)
+    changed = ["src/app/api/cart/route.ts"] + (["migrations/002_orders.sql", "scripts/seed.ts"] if mode == "uncommitted" else [])
+    if mode == "uncommitted":
+        touched = {}  # uncommitted shows what git sees, not what the agent opened
+    g = build(SHOP, FILES, touched, f"{SHOP}/src/components/CartSummary.tsx", IMPORTERS, changed)
     g["stats"].update(added=19, removed=3)
     g.update(project="acme-shop", agent="claude", state="working", action="Edit CartSummary.tsx", truncated=False)
     return g

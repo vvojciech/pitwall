@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: panel messages (such as "Turn undone") were hidden behind the usage strip at the bottom.
+
 ## 0.6.0 (2026-10-10)
 
 - Plan limit bars have two layers: the share of the limit used, and the share of the window that

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (2026-10-10)
+
+- A context ring on each agent card shows how full its context window is: neutral, then amber from
+  80% and red from 90%. Hover for the percentage, window size and tokens. The status line wrapper
+  now also keeps one status file per Claude session; files older than three days are removed.
+
 ## 0.3.0 (2026-10-10)
 
 - Removed: dev server tabs. Pitwall no longer takes a dev server away from the session; Claude

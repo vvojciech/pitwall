@@ -22,6 +22,9 @@ this for Ghostty.
   project, state (working, needs permission, waiting for you, done, failed), task, last action
   and a timer. Click a card to go to that pane. Double-click its name to rename it; the tab
   takes the same name. Plan usage stays pinned to the bottom of the panel.
+- **Context ring.** A ring on each card shows how full the agent's context window is, like the
+  Claude mobile app. It turns amber from 80% and red from 90%; hover for the numbers. Claude's
+  figures come from the status line wrapper, and Codex's from its transcript.
 - **Background work.** When a Claude Code turn ends with work still running (a background shell,
   a sub-agent, a monitor or a scheduled wake-up), the card lists it, and the header counts it.
 - **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it

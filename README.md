@@ -1,142 +1,175 @@
 # Pitwall
 
-Watch and steer Claude Code and Codex agents from iTerm2.
+[![test](https://github.com/vvojciech/pitwall/actions/workflows/test.yml/badge.svg)](https://github.com/vvojciech/pitwall/actions/workflows/test.yml)
 
-Pitwall is a small daemon and an iTerm2 toolbelt panel. It is not a fork of iTerm2. It uses the
-iTerm2 Python API and the hooks that Claude Code and Codex already support. It follows the idea
-of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTerm2.
+Watch and steer Claude Code and Codex from iTerm2. Pitwall adds a panel to the iTerm2 window
+that follows every agent in every tab: what it does, what it needs from you, what it changed,
+and how much of your plan it used.
+
+<p align="center"><img src="docs/images/panel.png" width="320" alt="The Pitwall panel: a failed command with the process that holds its port, an agent that waits for permission with Allow and Deny, and the code map of its turn"></p>
+
+Pitwall is not a fork of iTerm2. It is a small local service that talks to iTerm2 through the
+iTerm2 Python API, and to the agents through the hooks that Claude Code and Codex already have.
+The idea comes from [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), which does
+this for Ghostty.
 
 ## What it does
 
-- **Agent sidebar.** A toolbelt panel lists every agent in every iTerm2 tab. Each card shows
-  the project, the agent, its state (working, needs permission, waiting for you, done or
-  failed), the task, the last tool call and a timer. Click a card to go to its tab.
-- **Tab signals.** A tab turns amber when its agent waits for you, and it gets a "Needs you"
-  badge. It turns green or red when the agent finishes or fails, until you look at it. Your
-  profile's own tab colour and badge come back after that.
-- **Native tab status for Codex.** iTerm2's own Claude Code integration shows a status dot and
-  text (idle, working, waiting) in each Claude tab. Pitwall writes the same status for Codex
-  tabs, in the same colours. It leaves Claude tabs to iTerm2, so the two do not overwrite each
-  other. Set **Settings > Appearance > General > Tab bar location** to **Left** to see all
-  tabs as a vertical list.
-- **Allow and Deny without switching.** A card that needs permission shows the command and
-  two buttons. Pitwall sends the keys only when the permission menu is on screen with the
-  first option selected. In all other cases it tells you to open the tab.
-- **Mission Control.** All agents on one page, with the last lines of each terminal. Waiting
-  agents come first. Open it with the grid button in the sidebar, or run `pitwall mission`.
-- **Undo a turn.** Before each prompt, Pitwall snapshots the work tree as a git tree object.
-  "Undo turn" lists the files it will change, then puts them back. "Redo" brings the agent's
-  changes back. Pitwall does not change your index, commits, branches or stash. Ignored
-  files such as `node_modules` stay as they are.
-- **Code map.** "Map" on a card draws the project as a star map: folders by type (frontend,
-  backend and data, tests, config), and the files the agent read and edited this turn, lit. A
-  label follows the file the agent works on. Dashed lines show which files import an edited file,
-  and a chip warns when no test imports an edit. Overview shows the top two folder levels; Files
-  also shows the files beside the touched ones. Imports are read for JavaScript, TypeScript and
-  Python.
-- **Timeline.** "Timeline" on a card shows the agent's prompts, thinking, replies, tool calls
-  and sub-agents, read from its transcript. It updates while it is open.
-- **Hand off.** "Hand off" on a card writes a message for Claude or Codex: the task, the recent
-  activity, the diff since the first prompt and the failed commands for the project. Choose
-  Continue, Review or Opinion, edit the text, and send it. The other agent starts in a new
-  split beside the first one.
-- **Shared memory.** A new Codex session starts with the Claude Code notes for the project, and
-  a new Claude Code session starts with the Codex memories. Both are marked as possibly out of
-  date. Turn it off with `PITWALL_SHARED_MEMORY=0`.
-- **Failed commands.** When a command fails in a shell tab, the panel shows it with its last
-  output lines. "Send to Claude" types it into the agent that works in that project, when the
-  agent is not busy. With no agent there, "Fix with Claude" or "Codex" starts one in a new
-  split. This needs iTerm2 shell integration.
-- **Busy ports.** When a command fails because its port is taken, the failed command shows
-  which process holds the port, and "Stop it" ends that process.
-- **Review loops.** "Review loop" on a card starts Codex or Claude in a new split to review the
-  agent's changes. Each time the reviewer answers CHANGES NEEDED, its findings go to the first
-  agent; each time that agent finishes, its new changes go back to the reviewer. The loop ends at
-  APPROVED or at the round limit. Each message waits for your Send, unless you choose to send
-  automatically. Nothing is typed into an agent during its turn.
-- **Agent races.** The flag button starts a race: choose a project, a task, and how many Claude
-  and Codex agents run it. Each agent works in its own git worktree from the current commit, in
-  one new tab with a split per agent. The race card shows each agent's state and changes, opens
-  each diff, and applies the result you choose to your project, unstaged. When an agent asks to
-  trust its new folder, the card says so, with Show and Trust buttons. "Clean up" closes the race
-  tab and deletes its worktrees and branches.
-- **Dev server tabs.** When Claude starts a dev server (`npm run dev`, `vite`, `rails s` and
-  others), Pitwall runs it in its own tab, so it keeps running after the turn. Claude gets
-  the path of the log file. Turn it off with `PITWALL_DEV_TABS=0`.
-- **Ports.** The panel lists the ports that your projects listen on, with Open and Stop.
-- **Usage and activity.** The panel shows the 5-hour and weekly limits of your Claude and Codex
-  plans, and today's agent time, prompts and tokens. "Activity" opens a page with the last 7, 14
-  or 30 days: totals, agent time per day for each agent, and a table per project. Agent time adds
-  up all agents, so two agents working for an hour count as two hours. The data comes from the
-  transcripts the agents already keep. Codex writes its limits there. Claude Code gives its
-  limits only to the status line, so `pitwall install` puts a small wrapper around your status
-  line command: it saves the input for Pitwall, then runs your command unchanged.
-  `pitwall uninstall` puts your command back.
-- **Setup and doctor.** `pitwall install` adds the hooks, with a backup of each file it
-  changes, and starts the daemon. `pitwall doctor` checks each part and tells you the fix.
+**See every agent**
+
+- **Agent panel.** One card per agent: project, state (working, needs permission, waiting for
+  you, done, failed), task, last action and a timer. Click a card to go to that pane.
+- **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
+  finishes or fails, until you look at it.
+- **Mission Control.** Every agent on one page, with the end of each terminal.
+- **Code map.** The project as a star map: folders by type, the files the agent read and edited
+  this turn, the file it works on now, and the files that import an edit.
+- **Timeline.** The agent's prompts, thinking, replies, tool calls and sub-agents.
+
+**Steer them**
+
+- **Allow and Deny** a permission prompt from the panel, without switching tabs.
+- **Hand off** a task, its diff and its failed commands to another Claude or Codex.
+- **Review loops.** A second agent reviews the first one's changes, round after round, until it
+  answers APPROVED.
+- **Agent races.** One task, several agents, each in its own git worktree. Compare the diffs and
+  apply the one you want.
+- **Shared memory.** Codex starts with Claude Code's notes for the project, and Claude Code
+  starts with Codex's memories.
+
+**Undo and recover**
+
+- **Undo a turn.** Before each prompt, Pitwall saves a snapshot of the work tree. Undo lists the
+  files it will change, then puts them back. Redo brings the changes back.
+- **Failed commands.** When a command fails in a shell tab, send it to the agent in that
+  project, or start one to fix it.
+- **Busy ports.** When a port is taken, the panel names the process that holds it, with a
+  button to stop it.
+- **Dev server tabs.** When Claude starts a dev server, Pitwall runs it in its own tab, so it
+  keeps running after the turn. Claude gets the path of the log.
+
+**Know your usage**
+
+- **Plan limits.** The 5-hour and weekly limits of your Claude and ChatGPT plans.
+- **Activity.** Agent time, prompts, files, commands and tokens per day and per project.
+
+<p align="center"><img src="docs/images/mission-control.png" alt="Mission Control: three agents with their state, task and the end of their terminal"></p>
+
+<p align="center"><img src="docs/images/activity.png" alt="The activity page: totals, agent time per day for Claude and Codex, plan limits and projects"></p>
 
 ## Install
 
-You need macOS, iTerm2 3.6 or newer with the Python API on, Python 3.9 or newer and git.
+You need macOS, [iTerm2](https://iterm2.com) 3.6 or newer, Python 3.9 or newer and git. Pitwall
+works with [Claude Code](https://claude.com/claude-code), [Codex](https://github.com/openai/codex)
+or both.
 
 ```sh
-git clone https://github.com/vvojciech/pitwall.git
-cd pitwall
-bin/pitwall install
+curl -fsSL https://raw.githubusercontent.com/vvojciech/pitwall/main/install.sh | bash
 ```
 
-Then in iTerm2, open **View > Show Toolbelt**, and select **Toolbelt > Pitwall**.
+The installer puts the code in `~/.pitwall/app`, links `pitwall` into `~/.local/bin`, and runs
+`pitwall install`. To install from a clone instead:
 
-To turn on the Python API, open iTerm2 **Settings > General > Magic** and select
-**Enable Python API**.
+```sh
+git clone https://github.com/vvojciech/pitwall.git && cd pitwall && bin/pitwall install
+```
 
-Codex asks you to trust new hooks. Start Codex once after the install and approve them.
+Then:
 
-To open Mission Control from a key, open iTerm2 **Settings > Keys > Key Bindings**, add a
-binding, select **Invoke Script Function**, and enter `pitwall_mission_control()`.
+1. In iTerm2, open **Settings > General > Magic** and turn on **Enable Python API**, if
+   `pitwall doctor` says it is off.
+2. Open **View > Show Toolbelt**, then select **Toolbelt > Pitwall**.
+3. Start Codex once and approve Pitwall's hooks. Codex asks for every new hook.
+4. Optional: install iTerm2's shell integration (**iTerm2 > Install Shell Integration**) to
+   catch failed commands. Open new tabs after you install it.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `pitwall install` | Make the venv, add the hooks, start the daemon |
-| `pitwall uninstall` | Remove the hooks and stop the daemon |
-| `pitwall doctor` | Check the setup |
+| `pitwall install` | Make the venv, add the hooks, start the service |
+| `pitwall update` | Pull the newest version and install it again |
+| `pitwall doctor` | Check each part of the setup and say how to fix it |
 | `pitwall mission` | Open Mission Control |
+| `pitwall activity` | Open the activity page |
+| `pitwall uninstall` | Remove the hooks and the status line wrapper, and stop the service |
+
+To open Mission Control from a key, open iTerm2 **Settings > Keys > Key Bindings**, add a
+binding, select **Invoke Script Function**, and enter `pitwall_mission_control()`.
+
+## What install changes on your Mac
+
+| Change | Undo |
+|---|---|
+| Adds 10 hooks to `~/.claude/settings.json` and 7 to `~/.codex/hooks.json`. Your other hooks stay. A backup is written next to each file it changes. | `pitwall uninstall` |
+| Wraps your Claude Code status line command. The wrapper saves its input (which holds the plan limits) to `~/.pitwall/`, then runs your command with the same input, so the status line looks the same. | `pitwall uninstall` puts your command back |
+| Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
+| Keeps state, logs and caches in `~/.pitwall/`. | Delete the folder |
+
+Settings: `PITWALL_SHARED_MEMORY=0` turns off shared memory, and `PITWALL_DEV_TABS=0` turns off
+dev server tabs. Set them in the environment that starts your agents.
 
 ## How it works
 
-1. Claude Code and Codex run `pitwall hook <agent> <event>` on each hook event. The hook
-   reads `ITERM_SESSION_ID` to know its tab. It prints nothing and always exits 0, so it
-   cannot break the agent.
-2. The hook posts the event to the daemon on `127.0.0.1`. The daemon makes a new random
-   token at each start, and it refuses each request without that token. The token is in
-   `~/.pitwall/daemon.json`, which only you can read.
-3. The daemon runs as a LaunchAgent in its own venv with the `iterm2` package. It waits
-   for iTerm2 to start, and it starts again when iTerm2 quits.
-4. The daemon serves the sidebar page and registers it as a toolbelt tool.
+1. Claude Code and Codex run `pitwall hook <agent> <event>` on each hook event. The hook reads
+   `ITERM_SESSION_ID` to know its pane, sends the event to the service and exits. It never
+   blocks or fails the agent, and it prints only the shared memory and the dev server notice.
+2. The service holds the agent state, serves the panel on `127.0.0.1`, and acts on iTerm2
+   through its Python API: tab colours, keyboard focus, screen reads and keystrokes.
+3. The panel is a web page that iTerm2 shows in its toolbelt. It asks the service for the
+   state every second.
 
-State and logs are in `~/.pitwall/`. Nothing leaves your Mac.
+## Security and privacy
+
+- **Nothing leaves your Mac.** There is no account, server or telemetry. Usage numbers come from
+  the transcripts that Claude Code and Codex already keep on disk.
+- **Only you can use the service.** It listens on `127.0.0.1` only. It makes a new random token
+  at each start and refuses each request without it. The token is in `~/.pitwall/daemon.json`,
+  which only your user can read, so a web page or another user cannot drive your agents.
+- **Keystrokes need the matching screen.** Allow, Deny and Trust send keys only when Pitwall sees
+  the expected menu on screen with the expected option selected. Messages to an agent are never
+  typed during its turn.
+- **Stop asks first, and checks again.** Stopping a process asks for a confirmation, and Pitwall
+  checks that the process still holds the port.
+
+Found a security problem? Open a private security advisory on GitHub.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| The panel says "Pitwall is not running" | Run `pitwall doctor`. Read `~/.pitwall/daemon.log`. |
+| An agent has no card | It appears within 5 seconds of starting, or at its first hook event. Check `pitwall doctor` for the hooks. |
+| Allow says the prompt is not on screen | Open the tab and answer there. Pitwall answers only the first option of a visible menu. |
+| No Claude plan limits | They appear after the next Claude Code reply, when the status line runs. |
+| Failed commands never show | Install iTerm2 shell integration, then open a new tab. |
+| A Codex card never shows | Approve Pitwall's hooks the next time Codex starts. |
+| The panel is on the right | iTerm2 always docks the toolbelt on the right. Set **Settings > Appearance > General > Tab bar location** to **Left** for a vertical tab list with status dots. |
 
 ## Limits
 
-- The macOS notification for a waiting agent comes from Claude Code itself. Click it to go to
-  the tab. It has no Allow or Deny buttons. That needs a native helper app.
-- Undo works in git repositories only. Snapshots are not referenced by a ref, so
-  `git gc` can remove them after its prune window (two weeks by default).
-- Mission Control opens in your default browser, not in an iTerm2 tab.
+- macOS and iTerm2 only.
+- Undo works in git repositories only.
+- The code map reads imports for JavaScript, TypeScript and Python.
+- Notifications have no Allow or Deny buttons.
+- Mission Control and the activity page open in your browser.
 
 ## Development
 
 ```sh
-python3 -m unittest
+python3 -m unittest              # no network, no iTerm2 needed
+python3 scripts/demo.py          # the UI with invented data, on http://127.0.0.1:47821/?t=demo
 ```
 
-To run a second daemon for a test, give it its own state folder, and keep it off the toolbelt:
+A second service for a test needs its own state folder, and must stay off the toolbelt:
 
 ```sh
 PITWALL_HOME=/tmp/pw PITWALL_NO_TOOLBELT=1 PYTHONPATH=. ~/.pitwall/venv/bin/python -m pitwall.daemon
 ```
+
+The code is plain Python 3.9 and plain JavaScript, with no build step and one dependency (the
+`iterm2` package, in the service's venv only). See [CHANGELOG.md](CHANGELOG.md) and
+[ROADMAP.md](ROADMAP.md).
 
 ## License
 

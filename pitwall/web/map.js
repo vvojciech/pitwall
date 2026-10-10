@@ -35,8 +35,12 @@ function mapChips(d) {
 const fmtCount = (n) => n.toLocaleString("en-US");
 
 function mapSvg(d, s) {
-  const S = 300, C = S / 2, R = C - 34;  // viewBox size, centre, usable radius
-  const at = (n) => [C + n.x * R, C + n.y * R];
+  const S = 300, PAD = 30;
+  // Fit the box around all nodes to the panel: a lopsided tree would leave half of it empty.
+  const xs = d.nodes.map((n) => n.x), ys = d.nodes.map((n) => n.y);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const scale = (S - 2 * PAD) / Math.max(x1 - x0, y1 - y0, 0.2);
+  const at = (n) => [S / 2 + (n.x - (x0 + x1) / 2) * scale, S / 2 + (n.y - (y0 + y1) / 2) * scale];
   const byId = Object.fromEntries(d.nodes.map((n) => [n.id, n]));
   let edges = "", links = "", dots = "";
   const wanted = [];  // [priority, x, y, text, class]; placed later without overlaps

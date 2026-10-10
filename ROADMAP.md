@@ -9,6 +9,8 @@
 - Shared memory between Claude Code and Codex.
 - Timeline, Hand off, failed commands, dev server tabs and ports.
 - Busy port help, review loops, agent races, activity and plan usage.
+- Code map (overview and files, JavaScript, TypeScript and Python imports).
+- 0.1.0: one-line installer, `pitwall update`, CI on Python 3.9 and 3.13, README screenshots.
 
 ## Verify next
 

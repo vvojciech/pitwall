@@ -105,8 +105,11 @@ function busyPort(f) {
   const b = f.busy;
   if (!b) return "";
   const who = `${esc(b.command)}${b.project ? ` in ${esc(b.project)}` : ""}`;
-  return `<div class="busy"><span>Port <b>${b.port}</b> is held by ${who} (pid ${b.pid}).</span>
-    <button class="btn danger" data-fail="free-port" data-id="${f.id}">${MORE_ICON.stop}Stop it</button></div>`;
+  const action = ui.freeing === f.id
+    ? `<div class="row"><button class="btn danger" data-fail="free-port" data-id="${f.id}">${MORE_ICON.stop}Stop ${esc(b.command)}</button>
+       <button class="btn ghost" data-fail="free-cancel" data-id="${f.id}">Keep it</button></div>`
+    : `<button class="btn danger" data-fail="free-ask" data-id="${f.id}">${MORE_ICON.stop}Stop it</button>`;
+  return `<div class="busy"><span>Port <b>${b.port}</b> is held by ${who} (pid ${b.pid}).</span>${action}</div>`;
 }
 
 function portsSection() {
@@ -185,6 +188,11 @@ async function featureAct(sid, name, button) {
 
 async function failureAct(button) {
   const id = Number(button.dataset.id);
+  if (button.dataset.fail === "free-ask" || button.dataset.fail === "free-cancel") {
+    ui.freeing = button.dataset.fail === "free-ask" ? id : null;
+    return render();
+  }
+  ui.freeing = null;
   button.disabled = true;
   try {
     const kind = button.dataset.fail;

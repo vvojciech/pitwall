@@ -17,7 +17,12 @@ const ICON = {
 };
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const base = (p) => (p || "").replace(/\/+$/, "").split("/").pop() || p || "";
+// "shop", or "shop › feature" for a worktree under .claude/worktrees (as ports.project_name does).
+function base(p) {
+  const [repo, rest] = (p || "").replace(/\/+$/, "").split("/.claude/worktrees/");
+  const name = repo.split("/").pop() || repo;
+  return rest ? `${name} › ${rest.split("/")[0]}` : name;
+}
 
 // The prompt without image placeholders, else the title Claude gave the tab ("✳ Fix login (claude)").
 function taskText(s) {
@@ -119,7 +124,7 @@ function render() {
   } else {
     html = list.map(card).join("");
   }
-  if (ui.data && !MISSION) html = failuresSection(ui.data.failures) + html + portsSection();
+  if (ui.data && !MISSION) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + portsSection();
   $("summary").innerHTML = summary(list);
   document.title = list.some((s) => s.state.startsWith("waiting")) ? "Pitwall (needs you)" : "Pitwall";
   // Rebuilding the list would drop the caret in the hand-off text, so wait while it has focus.
@@ -185,6 +190,8 @@ $("cards").addEventListener("click", (e) => {
   if (fail) return failureAct(fail);
   const port = e.target.closest("[data-port]");
   if (port) return portAct(port);
+  const raceButton = e.target.closest("[data-race]");
+  if (raceButton) return raceAct(raceButton);
   const el = e.target.closest("[data-sid]");
   if (!el) return;
   const button = e.target.closest("[data-act]");
@@ -198,7 +205,16 @@ $("cards").addEventListener("click", (e) => {
 $("cards").addEventListener("input", (e) => {
   const sid = e.target.dataset.handoff;
   if (sid && ui.handoff[sid]) ui.handoff[sid].text = e.target.value;
+  if (ui.raceForm && "raceTask" in e.target.dataset) {
+    ui.raceForm.task = e.target.value;
+    const start = document.querySelector('[data-race="start"]');
+    if (start) start.disabled = ui.raceForm.claude + ui.raceForm.codex < 2 || !e.target.value.trim();
+  }
 });
+$("cards").addEventListener("change", (e) => {
+  if (ui.raceForm && "raceRepo" in e.target.dataset) ui.raceForm.repo = e.target.value;
+});
+$("race").addEventListener("click", toggleRaceForm);
 $("mission").addEventListener("click", () => api("/api/mission", {}).catch((err) => toast(err.message)));
 
 if (MISSION) document.body.classList.add("mission");
@@ -206,7 +222,8 @@ poll();
 setInterval(() => { if (!document.hidden) poll(); }, MISSION ? 1500 : 1000);
 setInterval(tick, 1000);
 if (!MISSION) {
-  pollPorts().then(render);
+  Promise.all([pollPorts(), pollRaces()]).then(render);
   setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
+  setInterval(() => { if (!document.hidden) pollRaces(); }, 3000);
   setInterval(() => { if (!document.hidden) pollTimelines(); }, 2000);
 }

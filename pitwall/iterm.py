@@ -59,7 +59,8 @@ class Tabs:
 
 async def screen_text(session, last=None):
     contents = await session.async_get_screen_contents()
-    lines = [contents.line(i).string for i in range(contents.number_of_lines)]
+    # Cells a TUI skips with cursor moves read as NUL, not space (Claude Code draws its menus this way).
+    lines = [contents.line(i).string.replace("\x00", " ") for i in range(contents.number_of_lines)]
     while lines and not lines[-1].strip():
         lines.pop()
     return "\n".join(lines[-last:] if last else lines)

@@ -15,6 +15,7 @@ import iterm2
 from pitwall import config, handoff, ports, snapshot, timeline
 from pitwall.http import reply
 from pitwall.loops import Loops
+from pitwall.races import Races
 from pitwall.snapshot import repo_root, same_project
 
 HANDOFFS = config.HOME / "handoffs"
@@ -34,6 +35,7 @@ class Features:
         self.failures = deque(maxlen=8)
         self.next_id = 1
         self.loops = Loops(self)
+        self.races = Races(self)
 
     # Failed commands -----------------------------------------------------------------------
 
@@ -55,7 +57,7 @@ class Features:
         end = prompt.output_range.end.y
         first = max(prompt.output_range.start.y, end - OUTPUT_LINES)
         lines = await session.async_get_contents(first, end - first) if end > first else []
-        output = "\n".join(l.string for l in lines).rstrip()
+        output = "\n".join(l.string.replace("\x00", " ") for l in lines).rstrip()
         port = ports.busy_port(output, prompt.command)
         self.failures.append({"id": self.next_id, "pane": sid, "command": prompt.command.strip(),
                               "status": message.command_end.status, "cwd": prompt.working_directory or "",
@@ -100,6 +102,8 @@ class Features:
 
     async def route(self, method, path, query, data):
         """Handle a feature route. Returns None when the path is not one of these."""
+        if path.startswith("/api/race"):
+            return await self.races.route(method, path, query, data)
         if path == "/api/ports":
             return reply(200, {"ports": await asyncio.to_thread(ports.scan, str(Path.home()))})
         if path == "/api/ports/stop":

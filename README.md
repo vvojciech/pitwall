@@ -48,6 +48,12 @@ of [GhosttyEXTREME](https://github.com/steventsvik/GhosttyEXTREME), but for iTer
   agent; each time that agent finishes, its new changes go back to the reviewer. The loop ends at
   APPROVED or at the round limit. Each message waits for your Send, unless you choose to send
   automatically. Nothing is typed into an agent during its turn.
+- **Agent races.** The flag button starts a race: choose a project, a task, and how many Claude
+  and Codex agents run it. Each agent works in its own git worktree from the current commit, in
+  one new tab with a split per agent. The race card shows each agent's state and changes, opens
+  each diff, and applies the result you choose to your project, unstaged. When an agent asks to
+  trust its new folder, the card says so, with Show and Trust buttons. "Clean up" closes the race
+  tab and deletes its worktrees and branches.
 - **Dev server tabs.** When Claude starts a dev server (`npm run dev`, `vite`, `rails s` and
   others), Pitwall runs it in its own tab, so it keeps running after the turn. Claude gets
   the path of the log file. Turn it off with `PITWALL_DEV_TABS=0`.

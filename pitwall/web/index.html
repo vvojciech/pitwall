@@ -14,6 +14,9 @@
   </div>
   <div class="summary" id="summary"></div>
   <div class="hint">Click a card to go to its tab</div>
+  <button class="icon-btn" id="race" title="Start an agent race" aria-label="Start an agent race">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>
+  </button>
   <button class="icon-btn" id="mission" title="Open Mission Control" aria-label="Open Mission Control">
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
   </button>
@@ -21,6 +24,7 @@
 <main id="cards" aria-live="polite"></main>
 <div class="toast" id="toast" role="status"></div>
 <script src="/features.js"></script>
+<script src="/races.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

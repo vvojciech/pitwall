@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -59,6 +60,17 @@ class SnapshotTests(unittest.TestCase):
         snapshot.restore(redo["root"], redo["tree"])
         self.assertEqual(self.read("keep.txt"), "v2")
         self.assertEqual(self.read("src/new.ts"), "agent file")
+
+    def test_a_same_size_edit_in_the_index_second_is_seen(self):
+        # "Racy git": the file changes with its size and mtime equal to what the index recorded.
+        index = os.path.join(self.root, ".git", "index")
+        stamp = os.stat(index).st_mtime
+        self.write("keep.txt", "v9")  # same size as "v1"
+        os.utime(Path(self.root, "keep.txt"), (stamp, stamp))
+        time.sleep(1.1)  # the snapshot runs in a later second than the index write
+        snap = snapshot.take(self.root)
+        files = git(self.root, "ls-tree", "-r", snap["tree"], "keep.txt").split()
+        self.assertEqual(git(self.root, "cat-file", "-p", files[2]), "v9")
 
     def test_restore_keeps_the_staged_index(self):
         self.write("keep.txt", "staged")

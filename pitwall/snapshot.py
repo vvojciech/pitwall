@@ -26,7 +26,9 @@ def _temp_index(root):
     os.close(fd)
     real = os.path.join(root, _git(root, "rev-parse", "--git-path", "index").strip())
     if os.path.exists(real):
-        shutil.copyfile(real, path)
+        # copy2 keeps the index's mtime. With a fresh mtime, git trusts stale stat data and misses
+        # an edit made in the same second that kept the file size ("racy git").
+        shutil.copy2(real, path)
     else:
         os.remove(path)
     return path, dict(os.environ, GIT_INDEX_FILE=path)

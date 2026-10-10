@@ -1,6 +1,6 @@
 """The hook command. Claude Code and Codex run it on every hook event.
 
-It must never break the agent: it prints nothing and always exits 0.
+It must never break the agent: it always exits 0, and it prints only the SessionStart context.
 """
 from __future__ import annotations
 
@@ -12,7 +12,10 @@ import time
 import urllib.request
 
 from pitwall import config, snapshot
+from pathlib import Path
+
 from pitwall.events import to_event
+from pitwall.memory import context_for
 from pitwall.state import agent_of
 
 
@@ -50,10 +53,21 @@ def nested():
     return agent_depth(parse_ps(out), os.getpid()) >= 2
 
 
+def share_memory(agent, payload):
+    """On SessionStart, print the other agent's notes as context for this session."""
+    if os.environ.get("PITWALL_SHARED_MEMORY") == "0" or not payload.get("cwd"):
+        return
+    text = context_for(agent, payload["cwd"], Path.home())
+    if text:
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}))
+
+
 def run(agent, name):
     try:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
+        if name == "SessionStart":
+            share_memory(agent, payload)
         daemon = config.read_daemon()
         event = to_event(agent, name, payload, os.environ, time.time())
         # An agent run inside another agent's pane (claude -p in a script) shares its tab id.

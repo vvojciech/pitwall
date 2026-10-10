@@ -1,0 +1,26 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests
+        run: python -m unittest -v
+      - name: Byte-compile every module
+        run: python -m compileall -q pitwall bin/pitwall
+      - name: Check the web scripts parse
+        run: for f in pitwall/web/*.js; do node --check "$f"; done
+      - name: Check the shell scripts
+        run: bash -n install.sh && bash -n bin/pitwall-statusline

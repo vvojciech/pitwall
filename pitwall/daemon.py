@@ -236,7 +236,18 @@ def iterm_running():
     return any(line.endswith("/MacOS/iTerm2") for line in out.splitlines())
 
 
+def trim_log(path, limit=1_000_000, keep=200_000):
+    """Keep the log small: launchd appends to it forever."""
+    try:
+        if path.stat().st_size > limit:
+            tail = path.read_bytes()[-keep:]
+            path.write_bytes(tail[tail.find(b"\n") + 1:])
+    except OSError:
+        pass
+
+
 if __name__ == "__main__":
+    trim_log(config.LOG_FILE)
     # Wait for iTerm2: asking it for an API cookie would launch it.
     while not iterm_running():
         time.sleep(5)

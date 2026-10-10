@@ -34,8 +34,11 @@ class EditHooksTests(unittest.TestCase):
         install.edit_hooks(self.path, "claude", ("Stop", "SessionEnd"), add=False)
         self.assertEqual(self.hooks(), {"Stop": [{"hooks": [{"type": "command", "command": "other-tool"}]}]})
 
-    def test_a_backup_is_kept(self):
+    def test_a_backup_is_kept_only_when_the_file_changes(self):
         install.edit_hooks(self.path, "claude", ("Stop",), add=True)
+        before = self.path.read_text()
+        install.edit_hooks(self.path, "claude", ("Stop",), add=True)  # a second install changes nothing
+        self.assertEqual(self.path.read_text(), before)
         self.assertEqual(len(list(Path(self.tmp.name).glob("settings.json.pitwall-backup-*"))), 1)
 
 

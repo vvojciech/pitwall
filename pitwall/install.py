@@ -36,8 +36,6 @@ def edit_hooks(path, agent, events, add):
     if not path.parent.exists():
         return False
     data = json.loads(path.read_text()) if path.exists() else {}
-    if path.exists():
-        shutil.copyfile(path, path.with_name(f"{path.name}.pitwall-backup-{int(time.time())}"))
     hooks = data.setdefault("hooks", {})
     for event in set(hooks) | set(events):
         entries = [e for e in hooks.get(event, []) if not is_ours(e)]
@@ -47,8 +45,20 @@ def edit_hooks(path, agent, events, add):
             hooks[event] = entries
         else:
             hooks.pop(event, None)
-    path.write_text(json.dumps(data, indent=2) + "\n")
+    if not hooks:
+        data.pop("hooks")
+    _save(path, data)
     return True
+
+
+def _save(path, data):
+    """Write a settings file only when it changes, and keep a backup of the old one."""
+    text = json.dumps(data, indent=2) + "\n"
+    if path.exists():
+        if path.read_text() == text:
+            return
+        shutil.copyfile(path, path.with_name(f"{path.name}.pitwall-backup-{int(time.time())}"))
+    path.write_text(text)
 
 
 def wrap_statusline(path, home, add):
@@ -56,23 +66,24 @@ def wrap_statusline(path, home, add):
 
     The wrapper saves the status line input, which holds the plan limits, then runs the original.
     """
+    if not path.parent.exists():
+        return
     data = json.loads(path.read_text()) if path.exists() else {}
     line = data.get("statusLine") or {}
     saved = home / "statusline-command"
     wrapped = "pitwall-statusline" in line.get("command", "")
-    if add == wrapped:
-        return
-    if path.exists():
-        shutil.copyfile(path, path.with_name(f"{path.name}.pitwall-backup-{int(time.time())}"))
     if add:
-        home.mkdir(parents=True, exist_ok=True)
-        saved.write_text(line.get("command", ""))
+        if not wrapped:
+            home.mkdir(parents=True, exist_ok=True)
+            saved.write_text(line.get("command", ""))
         data["statusLine"] = dict(line or {"type": "command"}, command=f'bash "{config.REPO}/bin/pitwall-statusline"')
+    elif not wrapped:
+        return
     elif saved.exists() and saved.read_text().strip():
         data["statusLine"] = dict(line, command=saved.read_text())
     else:
         data.pop("statusLine", None)
-    path.write_text(json.dumps(data, indent=2) + "\n")
+    _save(path, data)
 
 
 def launch_agent(load):
@@ -102,6 +113,9 @@ def launch_agent(load):
 
 
 def install():
+    if sys.platform != "darwin" or not Path("/Applications/iTerm.app").exists():
+        print("Pitwall needs macOS and iTerm2 (https://iterm2.com) in /Applications.")
+        return False
     config.HOME.mkdir(mode=0o700, parents=True, exist_ok=True)
     print("Creating the daemon venv in", config.VENV)
     subprocess.run([sys.executable, "-m", "venv", str(config.VENV)], check=True)
@@ -117,8 +131,24 @@ def install():
         if daemon_answers():
             break
         time.sleep(0.5)
-    doctor()
+    ok = doctor()
     print("\nIn iTerm2, open View > Show Toolbelt, then Toolbelt > Pitwall.")
+    return ok
+
+
+def update():
+    """Pull the newest version into this checkout, then run the install again."""
+    before = subprocess.run(["git", "-C", str(config.REPO), "rev-parse", "--short", "HEAD"],
+                            capture_output=True, text=True).stdout.strip()
+    pull = subprocess.run(["git", "-C", str(config.REPO), "pull", "--ff-only"], capture_output=True, text=True)
+    if pull.returncode != 0:
+        print(pull.stderr.strip() or "git pull failed.")
+        print(f"Update {config.REPO} by hand, then run: pitwall install")
+        return False
+    after = subprocess.run(["git", "-C", str(config.REPO), "rev-parse", "--short", "HEAD"],
+                           capture_output=True, text=True).stdout.strip()
+    print("Already up to date." if before == after else f"Updated {before} to {after}.")
+    return install()
 
 
 def uninstall():

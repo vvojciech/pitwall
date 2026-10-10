@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""pitwall: watch and steer coding agents from iTerm2.
+"""pitwall: watch and steer Claude Code and Codex agents from iTerm2.
 
   pitwall install      add the agent hooks and start the daemon
+  pitwall update       pull the newest version and restart the daemon
   pitwall uninstall    remove the hooks and stop the daemon
   pitwall doctor       check the setup
   pitwall mission      open Mission Control
+  pitwall activity     open the activity page
+  pitwall --version    print the version
   pitwall hook AGENT EVENT   (run by Claude Code and Codex)
 """
 import os
@@ -19,18 +22,22 @@ def main(argv):
         from pitwall.hook import run
         run(argv[1], argv[2])
         return 0
-    if command in ("install", "uninstall", "doctor"):
+    if command in ("--version", "version"):
+        from pitwall import __version__
+        print(f"pitwall {__version__}")
+        return 0
+    if command in ("install", "uninstall", "doctor", "update"):
         from pitwall import install
         result = getattr(install, command)()
         return 1 if result is False else 0
-    if command == "mission":
+    if command in ("mission", "activity"):
         from pitwall import config
         from pitwall.hook import post
         daemon = config.read_daemon()
         if not daemon:
             print("The daemon is not running. Run: pitwall doctor")
             return 1
-        post(daemon, "/api/mission", {})
+        post(daemon, "/api/open", {"view": command})
         return 0
     print(__doc__.strip())
     return 0 if command in ("help", "-h", "--help") else 2

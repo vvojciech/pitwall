@@ -85,7 +85,8 @@ def apply(sessions, event):
             s.update(state="working", permission=None)
         s["action"] = event.get("action") or s["action"]
         touched = s.setdefault("touched", {})
-        for path in event.get("paths") or ([event["path"]] if event.get("path") else []):
+        paths = event.get("paths") or ([event["path"]] if event.get("path") else [])
+        for path in paths if event.get("touch") in ("read", "edit") else []:
             if event["touch"] == "edit" or path not in touched:  # an edit outranks a read
                 touched[path] = event["touch"]
             s["current"] = path

@@ -63,5 +63,25 @@ class FreshMacTests(unittest.TestCase):
         self.assertNotIn("Claude Code hooks", out.getvalue())
 
 
+class LaunchAgentTests(unittest.TestCase):
+    def test_bootstrap_waits_for_the_old_service_to_go(self):
+        # launchctl bootout returns before the service is gone; bootstrap then fails with 5 for a moment.
+        from unittest import mock
+        codes = iter([0, 5, 5, 0])  # bootout, then bootstrap fails twice
+        run = mock.Mock(side_effect=lambda *a, **k: mock.Mock(returncode=next(codes), stderr=b""))
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(install, "PLIST", Path(tmp) / "a.plist"), \
+                mock.patch.object(install.subprocess, "run", run), mock.patch.object(install.time, "sleep"):
+            install.launch_agent(True)
+        self.assertEqual(run.call_count, 4)
+
+    def test_bootstrap_gives_up_with_launchctl_error(self):
+        from unittest import mock
+        run = mock.Mock(return_value=mock.Mock(returncode=5, stderr=b"Bootstrap failed: 5: Input/output error"))
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(install, "PLIST", Path(tmp) / "a.plist"), \
+                mock.patch.object(install.subprocess, "run", run), mock.patch.object(install.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "Input/output error"):
+                install.launch_agent(True)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -110,7 +110,13 @@ def launch_agent(load):
   <key>StandardErrorPath</key><string>{config.LOG_FILE}</string>
 </dict></plist>
 """)
-    subprocess.run(["launchctl", "bootstrap", domain, str(PLIST)], check=True)
+    # bootout returns before launchd has removed the old service, and bootstrap fails (5) until it has.
+    for _ in range(20):
+        result = subprocess.run(["launchctl", "bootstrap", domain, str(PLIST)], capture_output=True)
+        if result.returncode == 0:
+            return
+        time.sleep(0.25)
+    raise RuntimeError(f"launchctl could not start the service: {result.stderr.decode(errors='replace').strip()}")
 
 
 def install():

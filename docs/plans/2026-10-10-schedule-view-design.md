@@ -53,11 +53,14 @@ Measured with captured hook payloads on Claude Code 2.1, 2026-10-10.
 
 - **Card:** one row per job in the existing background list. Kind label (`loop`, `repeats`,
   `once`), the prompt (without `/loop`), a live countdown, and a Stop button. The title shows the
-  readable schedule and the expiry. "expires in 5h" shows in amber when under 24 hours remain.
-- **Header:** "2 scheduled, next in 4m" next to the background count.
+  full prompt, the schedule in plain words, the reason for a wake-up, and the expiry.
+- **Final run:** a recurring job fires one last time when it expires. If that comes before the
+  next cron match, the countdown targets it and reads "last in 3h 05m" in amber.
+- **Header:** "3 scheduled · next in 4m" after the background count. On a narrow panel the
+  counts wrap to their own line.
 - **Stop:** `POST /api/schedule/stop {sid, id}` pastes into the tab:
-  "Cancel scheduled job <id> with CronDelete. If it drives a /loop, stop the loop too."
-  The row shows "stopping" until the next payload drops the job.
+  "Cancel the scheduled job <id> with CronDelete." For a loop it adds: "also call
+  ScheduleWakeup with stop: true". The row shows "stopping" until the agent confirms.
 
 ## Error handling
 

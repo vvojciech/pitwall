@@ -1,7 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-10-10)
 
+- **Scheduled prompts** on each Claude Code card: `/loop` wake-ups, repeating jobs and one-shot
+  reminders. Each row shows the prompt and a live countdown to its next run. Hover for the
+  schedule in plain words, the reason Claude gave for a wake-up, and when Claude Code deletes a
+  repeating job (after 7 days). The run before that limit shows as "last in ..." in amber.
+- The **×** on a row stops that job. Pitwall asks the agent to cancel it, and the row goes when
+  the agent confirms.
+- The top bar shows how many prompts are scheduled across all agents and when the next one runs.
+  On a narrow panel the counts move to their own line.
 - Fixed: panel messages (such as "Turn undone") were hidden behind the usage strip at the bottom.
 
 ## 0.6.0 (2026-10-10)

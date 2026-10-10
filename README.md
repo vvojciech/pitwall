@@ -64,6 +64,8 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 **Background work.** Shells, sub-agents and monitors that still run after a turn ends.
 
+**Scheduled prompts.** Each `/loop`, repeating job and "remind me" of a Claude Code session, with a live countdown to its next run and a button that stops it. The top bar shows how many are scheduled and when the next one runs.
+
 **Code map** of the active tab's work: files read, files edited, the file it is on now, and the files that import an edit, with a warning when no test covers it.
 
 **Plan limits** for Claude and ChatGPT, pinned to the bottom, with a mark for the time passed in each window, and an activity page with time, prompts and tokens per day and per project.
@@ -198,6 +200,8 @@ Found a security problem? Open a private security advisory on GitHub.
 - The code map reads imports for JavaScript, TypeScript and Python.
 - Notifications have no Allow or Deny buttons.
 - The activity page opens in your browser.
+- Scheduled prompts are shown for Claude Code only. Codex CLI has no scheduler. Stop works by
+  asking the agent to cancel the job, because Claude Code has no outside control for it.
 
 ## Development
 

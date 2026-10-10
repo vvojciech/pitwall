@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1 (2026-10-10)
+
+- All tab signal colours are dark: dark amber for waiting, dark green for finished, dark red for
+  failed.
+- Fixed: after a restart, a tab could keep a bright colour from an older version, because Pitwall
+  took its own leftover colour for the user's. Pitwall now recognises its own colours and badges,
+  old and new, and clears leftovers when it starts.
+
 ## 0.4.0 (2026-10-10)
 
 - A context ring on each agent card shows how full its context window is: neutral, then amber from

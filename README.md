@@ -25,7 +25,7 @@ iTerm2 Python API, and to the agents through the hooks that Claude Code and Code
   figures come from the status line wrapper, and Codex's from its transcript.
 - **Background work.** When a Claude Code turn ends with work still running (a background shell,
   a sub-agent, a monitor or a scheduled wake-up), the card lists it, and the header counts it.
-- **Tab signals.** A tab turns amber when its agent waits for you, and green or red when it
+- **Tab signals.** A tab turns dark amber when its agent waits for you, and dark green or dark red when it
   finishes or fails, until you look at it.
 - **Code map.** A map of the work of the agent in your active tab, not of the whole project: the
   files it read and edited, the file it works on now, and the files that import an edit (with a

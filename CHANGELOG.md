@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 (2026-10-10)
+
+- Claude's questions (AskUserQuestion) show on the card with their options, not as a permission
+  prompt. A single-choice question takes one click; other questions collect picks until **Send**.
+  Pitwall types the answers only when the menu is on screen and nobody answered part of it.
+- Fixed: a card could show `<task-notification>` as its task, from state that an older version saved.
+
 ## 0.4.1 (2026-10-10)
 
 - All tab signal colours are dark: dark amber for waiting, dark green for finished, dark red for

@@ -37,6 +37,9 @@ iTerm2 Python API, and to the agents through the hooks that Claude Code and Code
 **Steer them**
 
 - **Allow and Deny** a permission prompt from the panel, without switching tabs.
+- **Answer Claude's questions** from the card. A single-choice question takes one click. For
+  several questions, or a question with more than one answer, pick the options and click **Send**.
+  To type your own answer, open the tab.
 - **Hand off** a task, its diff and its failed commands to another Claude or Codex.
 - **Review loops.** A second agent reviews the first one's changes, round after round, until it
   answers APPROVED.
@@ -128,7 +131,7 @@ starts your agents.
 - **Only you can use the service.** It listens on `127.0.0.1` only. It makes a new random token
   at each start and refuses each request without it. The token is in `~/.pitwall/daemon.json`,
   which only your user can read, so a web page or another user cannot drive your agents.
-- **Keystrokes need the matching screen.** Allow, Deny and Trust send keys only when Pitwall sees
+- **Keystrokes need the matching screen.** Allow, Deny, Trust and question answers send keys only when Pitwall sees
   the expected menu on screen with the expected option selected. Messages to an agent are never
   typed during its turn.
 - **Stop asks first, and checks again.** Stopping a process asks for a confirmation, and Pitwall
@@ -143,6 +146,7 @@ Found a security problem? Open a private security advisory on GitHub.
 | The panel says "Pitwall is not running" | Run `pitwall doctor`. Read `~/.pitwall/daemon.log`. |
 | An agent has no card | It appears within 5 seconds of starting, or at its first hook event. Check `pitwall doctor` for the hooks. |
 | Allow says the prompt is not on screen | Open the tab and answer there. Pitwall answers only the first option of a visible menu. |
+| A question says the menu is part answered | Someone moved in the menu in the tab. Finish the answer in the tab. |
 | No Claude plan limits | They appear after the next Claude Code reply, when the status line runs. |
 | Failed commands never show | Install iTerm2 shell integration, then open a new tab. |
 | A Codex card never shows | Approve Pitwall's hooks the next time Codex starts. |

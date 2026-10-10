@@ -10,6 +10,7 @@
 - Timeline, Hand off, failed commands and ports.
 - Busy port help, review loops, agent races, activity and plan usage.
 - Code map of the work (this turn or uncommitted), following the active tab.
+- 0.5.0: answer Claude's questions from the card.
 - 0.1.0: one-line installer, `pitwall update`, CI on Python 3.9 and 3.13, README screenshots.
 - 0.2.0: live tests with real Claude agents for Allow, Deny, Send to Claude, Hand off and review
   loops.
@@ -34,7 +35,7 @@
 ## Not planned
 
 - **Review inbox.** iTerm2 3.7 already has Diff and Code Review views for Claude tabs.
-- **Follow-mode editor, code map, backend view, database view, Visual Fix.** Each is a large
+- **Follow-mode editor, backend view, database view, Visual Fix.** Each is a large
   web app of its own.
 
 ## Known limits

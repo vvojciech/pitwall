@@ -20,7 +20,8 @@ from pitwall import config, iterm, snapshot
 from pitwall.http import reply, serve
 from pitwall.state import apply
 
-PAGE = (Path(__file__).parent / "web" / "index.html").read_bytes()
+WEB = Path(__file__).parent / "web"
+STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8"}
 ORDER = {"waiting_permission": 0, "waiting_input": 1, "failed": 2, "working": 3, "done": 4, "idle": 5}
 BUSY = ("working", "waiting_permission")
 
@@ -62,9 +63,12 @@ class Daemon:
                 asyncio.get_running_loop().create_task(self.tabs.show(s, self.unseen))
 
     async def handle(self, method, path, query, headers, body):
+        if method == "GET" and path in STATIC:
+            return reply(200, (WEB / path[1:]).read_bytes(), STATIC[path])
         if path == "/" and method == "GET":
-            ok = hmac.compare_digest(query.get("t", ""), self.token)
-            return reply(200, PAGE, "text/html; charset=utf-8") if ok else reply(403, {"error": "bad token"})
+            if not hmac.compare_digest(query.get("t", ""), self.token):
+                return reply(403, {"error": "bad token"})
+            return reply(200, (WEB / "index.html").read_bytes(), "text/html; charset=utf-8")
         if not hmac.compare_digest(headers.get("x-pitwall-token", ""), self.token):
             return reply(403, {"error": "bad token"})
         data = json.loads(body) if body else {}

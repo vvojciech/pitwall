@@ -22,5 +22,11 @@ jobs:
         run: python -m compileall -q pitwall bin/pitwall
       - name: Check the web scripts parse
         run: for f in pitwall/web/*.js; do node --check "$f"; done
+      - name: Check the panel scripts share no global names
+        # The panel loads its scripts into one scope; a duplicate const stops a whole file.
+        run: |
+          grep -o 'src="/[a-z]*\.js"' pitwall/web/index.html | cut -d/ -f2 | tr -d '"' \
+            | sed 's|^|pitwall/web/|' | xargs cat > "$RUNNER_TEMP/panel.js"
+          node --check "$RUNNER_TEMP/panel.js"
       - name: Check the shell scripts
         run: bash -n install.sh && bash -n bin/pitwall-statusline

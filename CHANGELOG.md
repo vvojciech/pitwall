@@ -8,7 +8,7 @@
 - Fixed: `pitwall install` and `pitwall update` could fail with "Bootstrap failed: 5" when the
   service was already running, and leave it stopped. Pitwall now waits for launchd.
 - Fixed: Codex warned "clamping Interrupt hook timeout to 3s". Pitwall's Codex Interrupt hook now
-  asks for 3 seconds. Codex asks you to trust this one hook again.
+  asks for 3 seconds. The change keeps the hook trusted.
 
 ## 0.5.0 (2026-10-10)
 

@@ -110,11 +110,12 @@ async def answer_questions(session, asked, picks):
         await asyncio.sleep(0.15)  # the menu redraws after each key
     if not questions.needs_submit(asked):
         return None
-    await asyncio.sleep(0.3)
-    if not questions.review_ready(await screen_text(session, 40)):
-        return "The answers went in, but the Submit page did not show. Open the tab to finish."
-    await session.async_send_text("\r")
-    return None
+    for _ in range(20):  # the Submit page can take over a second to draw
+        await asyncio.sleep(0.15)
+        if questions.review_ready(await screen_text(session, 40)):
+            await session.async_send_text("\r")
+            return None
+    return "The answers went in, but the Submit page did not show. Open the tab to finish."
 
 
 async def focus(app, session):

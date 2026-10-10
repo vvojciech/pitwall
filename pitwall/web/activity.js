@@ -8,6 +8,8 @@ const tip = document.getElementById("tip");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 let days = 7;
 let data = null;
+// The installed agents only (an older service sends no list: show both).
+const shown = () => AGENTS.filter(([a]) => !data.agents?.length || data.agents.includes(a));
 
 async function load() {
   const res = await fetch(`/api/activity?days=${days}`, { headers: { "X-Pitwall-Token": TOKEN } });
@@ -73,7 +75,7 @@ function chart(rows) {
     svg += `<text class="axis" x="${x + bw / 2}" y="${H - 8}" text-anchor="middle">${label}</text>`;
     svg += `<rect class="hit" data-i="${i}" x="${L + band * i}" y="${T}" width="${band}" height="${H - T - B}"/>`;
   });
-  const legend = AGENTS.map(([a, n]) => `<span><i class="s-${a}"></i>${n}</span>`).join("");
+  const legend = shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}</span>`).join("");
   chart.per = per;
   return `<div class="card-head"><h2>Agent time per day</h2><div class="legend">${legend}</div></div>
     <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent time per day, stacked by agent">${svg}</svg>`;
@@ -82,7 +84,7 @@ function chart(rows) {
 function limitsCard() {
   const l = data.limits;
   return `<section class="panel-card"><div class="card-head"><h2>Plan limits</h2></div>
-    <div class="usage-card wide">${limitsBlock("claude", l.claude)}${limitsBlock("codex", l.codex)}</div></section>`;
+    <div class="usage-card wide">${shown().map(([a]) => limitsBlock(a, l[a])).join("")}</div></section>`;
 }
 
 function projects(rows) {
@@ -94,10 +96,10 @@ function projects(rows) {
   });
   const list = Object.values(by).sort((a, b) => b.active - a.active);
   const body = list.map((p) => `<tr><th scope="row">${esc(p.project)}</th><td>${fmt.duration(p.active)}</td>
-    <td>${p.claude ? fmt.duration(p.claude) : "–"}</td><td>${p.codex ? fmt.duration(p.codex) : "–"}</td>
+    ${shown().map(([a]) => `<td>${p[a] ? fmt.duration(p[a]) : "–"}</td>`).join("")}
     <td>${fmt.count(p.prompts)}</td><td>${fmt.count(p.files)}</td><td>${fmt.count(p.commands)}</td><td>${fmt.tokens(p.tokens)}</td></tr>`).join("");
   return `<section class="panel-card"><div class="card-head"><h2>Projects</h2></div><div class="table-wrap"><table>
-    <thead><tr><th scope="col">Project</th><th scope="col">Agent time</th><th scope="col">Claude</th><th scope="col">Codex</th>
+    <thead><tr><th scope="col">Project</th><th scope="col">Agent time</th>${shown().map(([, n]) => `<th scope="col">${n}</th>`).join("")}
     <th scope="col">Prompts</th><th scope="col">Files</th><th scope="col">Commands</th><th scope="col">Tokens</th></tr></thead>
     <tbody>${body}</tbody></table></div></section>`;
 }
@@ -116,7 +118,7 @@ page.addEventListener("mousemove", (e) => {
   if (!hit) { tip.classList.remove("show"); return; }
   const p = chart.per[Number(hit.dataset.i)];
   const date = new Date(p.day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-  tip.innerHTML = `<b>${date}</b>${AGENTS.map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
+  tip.innerHTML = `<b>${date}</b>${shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
     <span class="sum">Total<em>${fmt.duration(p.total * 3600)}</em></span>`;
   tip.style.left = `${Math.min(e.clientX + 14, innerWidth - 190)}px`;
   tip.style.top = `${e.clientY + 14}px`;

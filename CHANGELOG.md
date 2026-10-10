@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed: the panel and the activity page showed empty Codex rows on a Mac without Codex. They
+  now show only the agents that are installed. (#2)
+
 - Fixed: `pitwall install` printed a pip upgrade warning on the stock macOS Python. (#1)
 
 ## 0.5.1 (2026-10-10)

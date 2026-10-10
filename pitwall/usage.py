@@ -71,10 +71,15 @@ def limits(home):
     return out
 
 
+def installed(home):
+    """The agents on this Mac, by their home folder; the panel draws only these."""
+    return [a for a in ("claude", "codex") if (home / f".{a}").is_dir()]
+
+
 def report(home, days=7):
     rows = activity(home, days)
     today = date.today().isoformat()
     total = lambda key, rs: sum(r[key] for r in rs)
     today_rows = [r for r in rows if r["day"] == today]
-    return {"days": days, "rows": rows, "limits": limits(home),
+    return {"days": days, "rows": rows, "limits": limits(home), "agents": installed(home),
             "today": {k: total(k, today_rows) for k in ("active", "prompts", "tokens", "files", "commands")}}

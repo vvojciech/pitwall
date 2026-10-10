@@ -59,7 +59,8 @@ function usageBar() {
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";
   const detail = `Today: ${fmt.duration(t.active)} agent time, ${fmt.count(t.prompts)} prompts, ${fmt.tokens(t.tokens)} tokens, ${fmt.count(t.commands)} commands`;
-  return `${row("claude", "Claude")}${row("codex", "Codex")}
+  const rows = [["claude", "Claude"], ["codex", "Codex"]].filter(([a]) => (u.agents || [a]).includes(a));
+  return `${rows.map(([a, n]) => row(a, n)).join("")}
     <div class="urow today-row" title="${detail}"><span>Today</span><span class="tval">${today}</span><button class="link" data-usage="open">Activity ›</button></div>`;
 }
 

@@ -69,3 +69,16 @@ class ActivityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstalledTests(unittest.TestCase):
+    def test_only_agents_with_a_home_folder_are_listed(self):
+        import tempfile
+        from pathlib import Path
+        from pitwall.usage import installed
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / ".claude").mkdir()
+            self.assertEqual(installed(home), ["claude"])
+            (home / ".codex").mkdir()
+            self.assertEqual(installed(home), ["claude", "codex"])

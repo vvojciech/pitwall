@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from datetime import date, timedelta
 from pathlib import Path
@@ -49,29 +50,34 @@ def activity(home, days=7):
     return rows
 
 
-def claude_limits(snapshots, now):
-    """The newest Claude limits across the `rate_limits` of all sessions, or None.
+def newest_rate_limits(snapshots, now):
+    """The newest value of each window across the `rate_limits` of all sessions, in Claude's format.
 
     An idle session re-renders its status line with the limits of its last reply, so no one
     snapshot is current. Use only grows inside a window, so the latest reset, then the highest
-    use, is the newest value. A window that has reset gives None: its new use is not known yet.
+    use, is the newest value. A window that has reset is left out: its new use is not known yet.
     """
-    def newest(key, window):
-        seen = [w for s in snapshots if isinstance(s, dict) and isinstance(w := s.get(key), dict)
-                and w.get("used_percentage") is not None and w.get("resets_at")]
-        if not seen:
-            return None
-        w = max(seen, key=lambda w: (w["resets_at"], w["used_percentage"]))
-        return {"used": w["used_percentage"], "resets_at": w["resets_at"], "window": window} if w["resets_at"] > now else None
+    out = {}
+    for s in snapshots:
+        for key, w in (s.items() if isinstance(s, dict) else ()):
+            if not isinstance(w, dict) or w.get("used_percentage") is None or not w.get("resets_at"):
+                continue
+            if key not in out or (w["resets_at"], w["used_percentage"]) > (out[key]["resets_at"], out[key]["used_percentage"]):
+                out[key] = w
+    return {k: w for k, w in out.items() if w["resets_at"] > now}
 
+
+def claude_limits(snapshots, now):
+    """The newest Claude limits in the panel's format, or None."""
+    r = newest_rate_limits(snapshots, now)
     # Claude's windows are fixed; the status line does not send their length.
-    out = {"five_hour": newest("five_hour", 5 * 3600), "week": newest("seven_day", 7 * 86400)}
+    pick = lambda w, window: w and {"used": w["used_percentage"], "resets_at": w["resets_at"], "window": window}
+    out = {"five_hour": pick(r.get("five_hour"), 5 * 3600), "week": pick(r.get("seven_day"), 7 * 86400)}
     return out if any(out.values()) else None
 
 
-def limits(home):
-    """Plan limits per agent: {claude: {...}, codex: {...}}; a missing source gives None."""
-    out = {"claude": None, "codex": None}
+def claude_snapshots():
+    """The `rate_limits` of every saved Claude status line, and the time of the newest save."""
     snapshots, seen = [], 0
     for path in [STATUS, *(config.HOME / "status").glob("*.json")]:
         try:
@@ -79,6 +85,13 @@ def limits(home):
             seen = max(seen, path.stat().st_mtime)
         except (OSError, ValueError, AttributeError):
             pass
+    return snapshots, seen
+
+
+def limits(home):
+    """Plan limits per agent: {claude: {...}, codex: {...}}; a missing source gives None."""
+    out = {"claude": None, "codex": None}
+    snapshots, seen = claude_snapshots()
     claude = claude_limits(snapshots, time.time())
     if claude:
         out["claude"] = dict(claude, seen=seen)
@@ -104,3 +117,10 @@ def report(home, days=7):
     today_rows = [r for r in rows if r["day"] == today]
     return {"days": days, "rows": rows, "limits": limits(home), "agents": installed(home),
             "today": {k: total(k, today_rows) for k in ("active", "prompts", "tokens", "files", "commands")}}
+
+
+if __name__ == "__main__":
+    # The status line wrapper: read Claude Code's status line input, print it with the newest limits.
+    raw = sys.stdin.read()
+    merged = newest_rate_limits(claude_snapshots()[0], time.time())
+    sys.stdout.write(json.dumps(dict(json.loads(raw), rate_limits=merged), separators=(",", ":")) if merged else raw)

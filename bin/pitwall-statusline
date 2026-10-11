@@ -12,5 +12,9 @@ if [ -n "$sid" ]; then
   printf '%s' "$input" > "$dir/status/$sid.json.tmp" 2>/dev/null && mv -f "$dir/status/$sid.json.tmp" "$dir/status/$sid.json"
 fi
 original=$(cat "$dir/statusline-command" 2>/dev/null)
-[ -n "$original" ] && printf '%s' "$input" | bash -c "$original"
+[ -n "$original" ] || exit 0
+# An idle session sends the limits of its last reply. Give your command the newest ones instead.
+python="$dir/venv/bin/python"; [ -x "$python" ] || python=python3
+merged=$(printf '%s' "$input" | PYTHONPATH="$(dirname "$0")/.." "$python" -m pitwall.usage 2>/dev/null) && [ -n "$merged" ] && input=$merged
+printf '%s' "$input" | bash -c "$original"
 exit 0

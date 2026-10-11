@@ -49,19 +49,39 @@ def activity(home, days=7):
     return rows
 
 
+def claude_limits(snapshots, now):
+    """The newest Claude limits across the `rate_limits` of all sessions, or None.
+
+    An idle session re-renders its status line with the limits of its last reply, so no one
+    snapshot is current. Use only grows inside a window, so the latest reset, then the highest
+    use, is the newest value. A window that has reset gives None: its new use is not known yet.
+    """
+    def newest(key, window):
+        seen = [w for s in snapshots if isinstance(s, dict) and isinstance(w := s.get(key), dict)
+                and w.get("used_percentage") is not None and w.get("resets_at")]
+        if not seen:
+            return None
+        w = max(seen, key=lambda w: (w["resets_at"], w["used_percentage"]))
+        return {"used": w["used_percentage"], "resets_at": w["resets_at"], "window": window} if w["resets_at"] > now else None
+
+    # Claude's windows are fixed; the status line does not send their length.
+    out = {"five_hour": newest("five_hour", 5 * 3600), "week": newest("seven_day", 7 * 86400)}
+    return out if any(out.values()) else None
+
+
 def limits(home):
     """Plan limits per agent: {claude: {...}, codex: {...}}; a missing source gives None."""
     out = {"claude": None, "codex": None}
-    try:
-        status = json.loads(STATUS.read_text())
-        r = status.get("rate_limits") or {}
-        # Claude's windows are fixed; the status line does not send their length.
-        pick = lambda w, window: w and {"used": w.get("used_percentage"), "resets_at": w.get("resets_at"), "window": window}
-        if r:
-            out["claude"] = {"five_hour": pick(r.get("five_hour"), 5 * 3600), "week": pick(r.get("seven_day"), 7 * 86400),
-                             "seen": STATUS.stat().st_mtime}
-    except (OSError, ValueError, AttributeError):
-        pass
+    snapshots, seen = [], 0
+    for path in [STATUS, *(config.HOME / "status").glob("*.json")]:
+        try:
+            snapshots.append(json.loads(path.read_text()).get("rate_limits"))
+            seen = max(seen, path.stat().st_mtime)
+        except (OSError, ValueError, AttributeError):
+            pass
+    claude = claude_limits(snapshots, time.time())
+    if claude:
+        out["claude"] = dict(claude, seen=seen)
     newest = max(home.glob(".codex/sessions/*/*/*/*.jsonl"), key=lambda p: p.stat().st_mtime, default=None)
     if newest:
         with open(newest, "rb") as f:

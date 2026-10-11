@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The Claude plan limits are now the newest values across all sessions. Before, the last session
+  to draw its status line won, and an idle session sent the limits of its last reply: an old
+  week figure and no 5-hour figure.
+
 ## 0.7.1 (2026-10-10)
 
 - Background tasks and scheduled prompts show an icon for their kind instead of a word, so a

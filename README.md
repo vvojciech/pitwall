@@ -131,7 +131,7 @@ Then:
 | Change | Undo |
 |---|---|
 | Adds 10 hooks to `~/.claude/settings.json` and 7 to `~/.codex/hooks.json`. Your other hooks stay. A backup is written next to each file it changes. | `pitwall uninstall` |
-| Wraps your Claude Code status line command. The wrapper saves its input (which holds the plan limits) to `~/.pitwall/`, then runs your command with the same input, so the status line looks the same. | `pitwall uninstall` puts your command back |
+| Wraps your Claude Code status line command. The wrapper saves its input (which holds the plan limits) to `~/.pitwall/`, then runs your command with the same input. Only the plan limits change: an idle tab gets the newest limits of all sessions, not the limits of its last reply. | `pitwall uninstall` puts your command back |
 | Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
 | Keeps state, logs and caches in `~/.pitwall/`. | Delete the folder |
 

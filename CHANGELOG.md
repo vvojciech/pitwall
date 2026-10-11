@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.7.2 (2026-10-11)
 
 - The Claude plan limits are now the newest values across all sessions. Before, the last session
   to draw its status line won, and an idle session sent the limits of its last reply: an old
   week figure and no 5-hour figure.
+- Your own status line command gets the same newest limits, so an idle tab no longer shows an old
+  week or 5-hour figure.
 
 ## 0.7.1 (2026-10-10)
 

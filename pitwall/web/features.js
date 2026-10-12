@@ -135,14 +135,20 @@ async function loadHandoff(sid) {
   if (ui.handoff[sid] === h) h.text = res.text;
 }
 
+// The footer panels share one slot on the card: opening one closes the others.
+function openPanel(sid, panel, value) {
+  for (const p of ["timeline", "handoff", "loopStart"]) delete ui[p][sid];
+  ui[panel][sid] = value;
+}
+
 // Returns true when the action was one of these features.
 async function featureAct(sid, name, button) {
   if (name === "timeline") {
     if (ui.timeline[sid]) delete ui.timeline[sid];
-    else { ui.timeline[sid] = {}; render(); await loadTimeline(sid); }
+    else { openPanel(sid, "timeline", {}); render(); await loadTimeline(sid); }
   } else if (name === "handoff") {
     if (ui.handoff[sid]) delete ui.handoff[sid];
-    else { ui.handoff[sid] = { to: "codex", mode: "continue" }; await loadHandoff(sid); }
+    else { openPanel(sid, "handoff", { to: "codex", mode: "continue" }); await loadHandoff(sid); }
   } else if (name === "handoff-to") {
     ui.handoff[sid].to = button.dataset.value;
   } else if (name === "handoff-mode") {
@@ -152,7 +158,7 @@ async function featureAct(sid, name, button) {
     delete ui.handoff[sid];
   } else if (name === "loop") {
     if (ui.loopStart[sid]) delete ui.loopStart[sid];
-    else ui.loopStart[sid] = { reviewer: "codex", rounds: 3, auto: false };
+    else openPanel(sid, "loopStart", { reviewer: "codex", rounds: 3, auto: false });
   } else if (name === "loop-reviewer" || name === "loop-rounds") {
     ui.loopStart[sid][name.slice(5)] = name === "loop-rounds" ? Number(button.dataset.value) : button.dataset.value;
   } else if (name === "loop-auto") {

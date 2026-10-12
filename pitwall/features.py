@@ -145,6 +145,8 @@ class Features:
             return reply(200, {"text": await asyncio.to_thread(self.handoff_text, s, query.get("mode", "continue"))})
         if path == "/api/handoff":
             to = "codex" if data.get("to") == "codex" else "claude"
+            if to not in usage.installed(Path.home()):
+                return reply(409, {"error": f"{to.title()} is not installed on this Mac."})
             await self.launch(s["sid"], to, s["cwd"], data["text"], f"handoff-{os.path.basename(s['cwd'])}")
             return reply(200, {"ok": True})
         return None
@@ -156,6 +158,8 @@ class Features:
             if s["state"] in ("working", "waiting_permission"):
                 return reply(409, {"error": "Start the loop when the agent finishes its turn."})
             reviewer = "codex" if data.get("reviewer") == "codex" else "claude"
+            if reviewer not in usage.installed(Path.home()):
+                return reply(409, {"error": f"{reviewer.title()} is not installed on this Mac."})
             rounds = min(max(int(data.get("rounds") or 3), 1), 10)
             await self.loops.start(s, reviewer, rounds, bool(data.get("auto")))
         elif not s.get("loop"):

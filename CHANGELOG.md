@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4 (2026-10-12)
+
+- Hand off, Review loop and race diffs work when your git config sets an external diff tool such
+  as difft. Before, they failed with "git diff ... returned non-zero exit status 128", because the
+  service could not find the tool on its PATH.
+
 ## 0.7.3 (2026-10-12)
 
 - Hand off and Review loop only offer the agents installed on your Mac. Without Codex, both used

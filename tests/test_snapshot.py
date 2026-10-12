@@ -87,6 +87,15 @@ class SnapshotTests(unittest.TestCase):
         snap = snapshot.take(os.path.join(self.root, "sub"))
         self.assertEqual(snap["root"], self.root)
 
+    def test_diff_ignores_a_configured_external_diff_tool(self):
+        # A user's diff.external (difft, say) is not on the service's PATH and prints no patch.
+        git(self.root, "config", "diff.external", "no-such-diff-tool")
+        snap = snapshot.take(self.root)
+        self.write("keep.txt", "v2")
+        patch = snapshot.diff(snap["root"], snap["tree"])
+        self.assertIn("-v1", patch)
+        self.assertIn("+v2", patch)
+
 
 if __name__ == "__main__":
     unittest.main()

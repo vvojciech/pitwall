@@ -35,12 +35,12 @@ def stat(entry):
 
 
 def diff(entry):
-    return _git(entry["worktree"], "diff", entry["base"], _write_tree(entry["worktree"]))
+    return _git(entry["worktree"], "diff", "--no-ext-diff", entry["base"], _write_tree(entry["worktree"]))
 
 
 def apply(repo, entry):
     """Apply an agent's changes to the repo's work tree, unstaged. Returns an error, or None."""
-    patch = _git(entry["worktree"], "diff", "--binary", entry["base"], _write_tree(entry["worktree"]))
+    patch = _git(entry["worktree"], "diff", "--no-ext-diff", "--binary", entry["base"], _write_tree(entry["worktree"]))
     if not patch.strip():
         return "That agent changed nothing."
     result = subprocess.run(["git", "-C", repo, "apply", "--whitespace=nowarn"], input=patch,

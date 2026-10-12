@@ -97,7 +97,8 @@ def preview(root, tree):
 def diff(root, tree):
     """The patch from the snapshot to the work tree now, new untracked files included."""
     current = _write_tree(root)
-    return _git(root, "diff", "--stat", tree, current) + "\n" + _git(root, "diff", tree, current)
+    # --no-ext-diff: a user's diff.external prints its own format, and the service's PATH may not reach it.
+    return _git(root, "diff", "--stat", tree, current) + "\n" + _git(root, "diff", "--no-ext-diff", tree, current)
 
 
 def restore(root, tree):

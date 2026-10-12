@@ -16,7 +16,7 @@ function loopStartPanel(s) {
   const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
     `<button class="${String(v) === String(value) ? "on" : ""}" data-act="loop-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
   return `<div class="panel handoff" data-stop>
-    <label>Reviewer</label>${seg("reviewer", [["codex", "Codex"], ["claude", "Claude"]], l.reviewer)}
+    <label>Reviewer</label>${seg("reviewer", installedOnly([["codex", "Codex"], ["claude", "Claude"]]), l.reviewer)}
     <label>Rounds at most</label>${seg("rounds", [[2, "2"], [3, "3"], [5, "5"]], l.rounds)}
     <label class="check"><input type="checkbox" data-act="loop-auto" ${l.auto ? "checked" : ""}> Send each message automatically</label>
     <p class="hint-line">The reviewer opens in a new split and reviews this agent's changes. Its findings go back to this agent until it answers APPROVED. ${l.auto ? "" : "You press Send for each message."}</p>
@@ -70,11 +70,9 @@ function timelinePanel(s) {
   return `<div class="panel timeline" data-stop><ol>${rows}</ol></div>`;
 }
 
-// The agents a hand-off can open: the installed ones (an older service sends no list: offer both).
-function handoffTargets() {
-  const installed = ui.data?.agents;
-  return [["claude", "Claude"], ["codex", "Codex"]].filter(([a]) => !installed?.length || installed.includes(a));
-}
+// The agents a hand-off or review can open: the installed ones (an older service sends no list: offer both).
+const installedOnly = (options) => options.filter(([a]) => !ui.data?.agents?.length || ui.data.agents.includes(a));
+const defaultAgent = () => installedOnly([["codex"]]).length ? "codex" : "claude";
 
 function handoffPanel(s) {
   const h = ui.handoff[s.sid];
@@ -82,7 +80,7 @@ function handoffPanel(s) {
   const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
     `<button class="${v === value ? "on" : ""}" data-act="handoff-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
   return `<div class="panel handoff" data-stop>
-    <label>Send to</label>${seg("to", handoffTargets(), h.to)}
+    <label>Send to</label>${seg("to", installedOnly([["claude", "Claude"], ["codex", "Codex"]]), h.to)}
     <label>Ask it to</label>${seg("mode", MODES, h.mode)}
     <textarea data-handoff="${esc(s.sid)}" spellcheck="false" ${h.text == null ? "disabled" : ""}>${esc(h.text ?? "Writing the hand-off…")}</textarea>
     <p class="hint-line">Opens in a new split beside this agent.</p>
@@ -154,7 +152,7 @@ async function featureAct(sid, name, button) {
     else { openPanel(sid, "timeline", {}); render(); await loadTimeline(sid); }
   } else if (name === "handoff") {
     if (ui.handoff[sid]) delete ui.handoff[sid];
-    else { openPanel(sid, "handoff", { to: handoffTargets().some(([a]) => a === "codex") ? "codex" : "claude", mode: "continue" }); await loadHandoff(sid); }
+    else { openPanel(sid, "handoff", { to: defaultAgent(), mode: "continue" }); await loadHandoff(sid); }
   } else if (name === "handoff-to") {
     ui.handoff[sid].to = button.dataset.value;
   } else if (name === "handoff-mode") {
@@ -164,7 +162,7 @@ async function featureAct(sid, name, button) {
     delete ui.handoff[sid];
   } else if (name === "loop") {
     if (ui.loopStart[sid]) delete ui.loopStart[sid];
-    else openPanel(sid, "loopStart", { reviewer: "codex", rounds: 3, auto: false });
+    else openPanel(sid, "loopStart", { reviewer: defaultAgent(), rounds: 3, auto: false });
   } else if (name === "loop-reviewer" || name === "loop-rounds") {
     ui.loopStart[sid][name.slice(5)] = name === "loop-rounds" ? Number(button.dataset.value) : button.dataset.value;
   } else if (name === "loop-auto") {

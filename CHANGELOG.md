@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3 (2026-10-12)
+
+- Hand off and Review loop only offer the agents installed on your Mac. Without Codex, both used
+  to pick it by default and open a split running a command that doesn't exist.
+- A card opens one of Timeline, Hand off and Review loop at a time. Opening one closes the others.
+
 ## 0.7.2 (2026-10-11)
 
 - The Claude plan limits are now the newest values across all sessions. Before, the last session

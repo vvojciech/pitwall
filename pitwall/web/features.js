@@ -70,13 +70,19 @@ function timelinePanel(s) {
   return `<div class="panel timeline" data-stop><ol>${rows}</ol></div>`;
 }
 
+// The agents a hand-off can open: the installed ones (an older service sends no list: offer both).
+function handoffTargets() {
+  const installed = ui.data?.agents;
+  return [["claude", "Claude"], ["codex", "Codex"]].filter(([a]) => !installed?.length || installed.includes(a));
+}
+
 function handoffPanel(s) {
   const h = ui.handoff[s.sid];
   if (!h) return "";
   const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
     `<button class="${v === value ? "on" : ""}" data-act="handoff-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
   return `<div class="panel handoff" data-stop>
-    <label>Send to</label>${seg("to", [["claude", "Claude"], ["codex", "Codex"]], h.to)}
+    <label>Send to</label>${seg("to", handoffTargets(), h.to)}
     <label>Ask it to</label>${seg("mode", MODES, h.mode)}
     <textarea data-handoff="${esc(s.sid)}" spellcheck="false" ${h.text == null ? "disabled" : ""}>${esc(h.text ?? "Writing the hand-off…")}</textarea>
     <p class="hint-line">Opens in a new split beside this agent.</p>
@@ -148,7 +154,7 @@ async function featureAct(sid, name, button) {
     else { openPanel(sid, "timeline", {}); render(); await loadTimeline(sid); }
   } else if (name === "handoff") {
     if (ui.handoff[sid]) delete ui.handoff[sid];
-    else { openPanel(sid, "handoff", { to: "codex", mode: "continue" }); await loadHandoff(sid); }
+    else { openPanel(sid, "handoff", { to: handoffTargets().some(([a]) => a === "codex") ? "codex" : "claude", mode: "continue" }); await loadHandoff(sid); }
   } else if (name === "handoff-to") {
     ui.handoff[sid].to = button.dataset.value;
   } else if (name === "handoff-mode") {

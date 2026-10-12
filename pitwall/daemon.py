@@ -16,7 +16,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import __version__, config, context, iterm, questions, schedules, snapshot, updates
+from pitwall import __version__, config, context, iterm, questions, schedules, snapshot, updates, usage
 from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
@@ -181,6 +181,7 @@ class Daemon:
             cards.append(card)
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
         return {"now": now, "sessions": layout_order(cards, layout), "failures": self.features.failure_cards(),
+                "agents": usage.installed(Path.home()),
                 "version": __version__, "update": self.update if self.update and self.update["behind"] else None}
 
     async def rename(self, s, session, name):

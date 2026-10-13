@@ -23,19 +23,11 @@ function raceForm() {
   const total = f.claude + f.codex;
   const why = raceBlocker(f);
   return `<section class="race-form panel handoff">
-    <h3>Start an agent race</h3>
-    <p class="intro">Give the same task to several agents at once, then keep the best result.</p>
+    <h3>Agent race</h3>
     <label>Project</label><select data-race-repo>${projects.map((p) =>
       `<option value="${esc(p)}" ${p === f.repo ? "selected" : ""}>${esc(p.split("/").pop())}</option>`).join("")}</select>
-    <label>Task</label><textarea data-race-task placeholder="Fix the flaky login test. Do not change the API.">${esc(f.task)}</textarea>
-    <p class="hint-line">Every agent gets this exact prompt. Be specific: they cannot ask each other.</p>
+    <label>Task</label><textarea data-race-task placeholder="Same prompt for every agent">${esc(f.task)}</textarea>
     <div class="counts"><div><label>Claude</label>${count("claude")}</div><div><label>Codex</label>${count("codex")}</div></div>
-    <ol class="steps">
-      <li>Each agent works in its own git worktree, made from the current commit. They all open in one new tab.</li>
-      <li>Race cards show each agent's state and diff size. Open <b>Diff</b> to compare the results.</li>
-      <li><b>Apply</b> copies one result into your project. Until then, your files do not change.</li>
-      <li><b>Clean up</b> closes the tab and deletes the worktrees and their branches.</li>
-    </ol>
     <div class="row"><button class="btn primary" data-race="start" ${why || ui.raceBusy ? "disabled" : ""}
       title="${why || `Start ${total} agents on this task`}">${FLAG}Start ${total} agents</button>
     <button class="btn" data-race="form-close">Cancel</button><span class="why">${why}</span></div></section>`;

@@ -77,9 +77,15 @@ function toast(text) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
+function clockAt(ts) {
+  return new Date((ts - ui.offset) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 function timerAttr(s) {
-  if (s.state === "working" || s.state.startsWith("waiting")) return s.started ? `data-since="${s.started}"` : "";
-  return s.finished ? `data-since="${s.finished}" data-suffix=" ago"` : "";
+  if (s.state === "working" || s.state.startsWith("waiting")) {
+    return s.started ? `data-since="${s.started}" title="Time on this prompt, started at ${clockAt(s.started)}"` : "";
+  }
+  return s.finished ? `data-since="${s.finished}" data-suffix=" ago" title="Last prompt ended at ${clockAt(s.finished)}"` : "";
 }
 
 function undoPanel(s) {
@@ -111,7 +117,7 @@ function card(s) {
       <div class="row"><button class="btn primary" data-act="allow" ${busy}>${ICON.check}Allow</button>
       <button class="btn" data-act="deny" ${busy}>${ICON.x}Deny</button></div></div>` : "";
   const tools = ui.undo[s.sid] ? "" : cardTools(s, busy);
-  return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}" title="Go to this tab">
+  return `<article class="card ${s.state}${s.unseen ? " unseen" : ""}${s.focused ? " focused" : ""}" data-sid="${esc(s.sid)}">
     <div class="head"><span class="dot"></span>${cardName(s)}
       <span class="timer" ${timerAttr(s)}></span>${contextRing(s)}</div>
     <div class="meta"><span class="agent ${esc(s.agent)}">${s.agent === "claude" ? "Claude" : "Codex"}</span>·
@@ -136,8 +142,10 @@ function summary(list) {
   if ($("bgcount").dataset.html !== counts) {
     $("bgcount").innerHTML = counts;
     $("bgcount").dataset.html = counts;
-    $("bgcount").title = [background && `${background} background tasks`, jobs.length && `${jobs.length} scheduled prompts`]
-      .filter(Boolean).join(", ") + " across all agents";
+    const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+    $("bgcount").title = [background && plural(background, "background task"), jobs.length && plural(jobs.length, "scheduled prompt")]
+      .filter(Boolean).join(", ") + " across all agents" + (isFinite(next) ? `.\nThe next prompt fires at ${clockAt(next)}.` : "")
+      + (jobs.length ? "\nOpen the agent cards to see or stop each one." : "");
   }
   return parts.join(" · ") || (list.length ? "All quiet" : "");
 }
@@ -254,8 +262,10 @@ $("cards").addEventListener("input", (e) => {
   if (sid && ui.handoff[sid]) ui.handoff[sid].text = e.target.value;
   if (ui.raceForm && "raceTask" in e.target.dataset) {
     ui.raceForm.task = e.target.value;
-    const start = document.querySelector('[data-race="start"]');
-    if (start) start.disabled = ui.raceForm.claude + ui.raceForm.codex < 2 || !e.target.value.trim();
+    const why = raceBlocker(ui.raceForm), start = document.querySelector('[data-race="start"]');
+    if (start) start.disabled = Boolean(why) || ui.raceBusy;
+    const note = document.querySelector(".race-form .why");
+    if (note) note.textContent = why;
   }
 });
 $("cards").addEventListener("change", (e) => {

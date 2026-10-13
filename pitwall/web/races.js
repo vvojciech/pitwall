@@ -3,6 +3,11 @@
 
 const FLAG = '<svg viewBox="0 0 24 24"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>';
 
+// Why the race cannot start yet, or "" when it can.
+function raceBlocker(f) {
+  return f.claude + f.codex < 2 ? "Pick at least 2 agents." : !f.task.trim() ? "Write the task first." : "";
+}
+
 function raceForm() {
   const f = ui.raceForm;
   if (!f) return "";
@@ -13,16 +18,27 @@ function raceForm() {
   }
   if (!projects.includes(f.repo)) f.repo = projects[0];
   const count = (agent) => `<div class="seg">${[0, 1, 2].map((n) =>
-    `<button class="${f[agent] === n ? "on" : ""}" data-race="count" data-agent="${agent}" data-value="${n}">${n}</button>`).join("")}</div>`;
+    `<button class="${f[agent] === n ? "on" : ""}" data-race="count" data-agent="${agent}" data-value="${n}"
+      title="${n ? `Run ${n} ${AGENT[agent]} agent${n > 1 ? "s" : ""}` : `No ${AGENT[agent]} agents`}">${n}</button>`).join("")}</div>`;
   const total = f.claude + f.codex;
+  const why = raceBlocker(f);
   return `<section class="race-form panel handoff">
+    <h3>Start an agent race</h3>
+    <p class="intro">Give the same task to several agents at once, then keep the best result.</p>
     <label>Project</label><select data-race-repo>${projects.map((p) =>
       `<option value="${esc(p)}" ${p === f.repo ? "selected" : ""}>${esc(p.split("/").pop())}</option>`).join("")}</select>
-    <label>Task</label><textarea data-race-task placeholder="What should each agent do?">${esc(f.task)}</textarea>
+    <label>Task</label><textarea data-race-task placeholder="Fix the flaky login test. Do not change the API.">${esc(f.task)}</textarea>
+    <p class="hint-line">Every agent gets this exact prompt. Be specific: they cannot ask each other.</p>
     <div class="counts"><div><label>Claude</label>${count("claude")}</div><div><label>Codex</label>${count("codex")}</div></div>
-    <p class="hint-line">Each agent works in its own worktree from the current commit, in one new tab. Your files stay as they are until you apply a result.</p>
-    <div class="row"><button class="btn primary" data-race="start" ${total < 2 || !f.task.trim() || ui.raceBusy ? "disabled" : ""}>${FLAG}Start ${total} agents</button>
-    <button class="btn" data-race="form-close">Cancel</button></div></section>`;
+    <ol class="steps">
+      <li>Each agent works in its own git worktree, made from the current commit. They all open in one new tab.</li>
+      <li>Race cards show each agent's state and diff size. Open <b>Diff</b> to compare the results.</li>
+      <li><b>Apply</b> copies one result into your project. Until then, your files do not change.</li>
+      <li><b>Clean up</b> closes the tab and deletes the worktrees and their branches.</li>
+    </ol>
+    <div class="row"><button class="btn primary" data-race="start" ${why || ui.raceBusy ? "disabled" : ""}
+      title="${why || `Start ${total} agents on this task`}">${FLAG}Start ${total} agents</button>
+    <button class="btn" data-race="form-close">Cancel</button><span class="why">${why}</span></div></section>`;
 }
 
 function stateWord(state) {

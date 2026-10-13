@@ -27,7 +27,8 @@ WEB = Path(__file__).parent / "web"
 STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; charset=utf-8",
           "/features.js": "text/javascript; charset=utf-8", "/races.js": "text/javascript; charset=utf-8",
           "/usage.js": "text/javascript; charset=utf-8", "/activity.js": "text/javascript; charset=utf-8",
-          "/map.js": "text/javascript; charset=utf-8", "/cards.js": "text/javascript; charset=utf-8"}
+          "/map.js": "text/javascript; charset=utf-8", "/cards.js": "text/javascript; charset=utf-8",
+          "/tooltip.js": "text/javascript; charset=utf-8"}
 PAGES = {"/": "index.html", "/activity": "activity.html"}
 BUSY = ("working", "waiting_permission")
 SCAN_SECONDS = 5

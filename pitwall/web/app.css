@@ -175,8 +175,18 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 .busy b { font-family: var(--mono); }
 .btn.danger { color: var(--red); border-color: var(--red); }
 .port { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+.port.armed { border-color: var(--red); }
+.port .icon-btn { flex: none; }
+.port .stop:hover, .port .stop.armed { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+.port .stop.armed { width: auto; gap: 5px; padding: 0 9px 0 7px; display: inline-flex; font-size: 11px; font-weight: 600; }
 .pnum { font: 600 11.5px var(--mono); color: var(--ink); min-width: 46px; }
 .pname { flex: 1; min-width: 0; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sched-row { cursor: pointer; }
+.sched-row .bg-type { flex: none; }
+.sched-row .pnum { font-weight: 500; min-width: 58px; font-variant-numeric: tabular-nums; }
+.sched-row .pnum.due { color: var(--amber); }
+.sched-row { min-width: 0; }
+.pwho { flex: none; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font-size: 10.5px; }
 .icon-btn.small { width: 22px; height: 22px; border-radius: 6px; }
 .icon-btn.small svg { width: 12px; height: 12px; }
 

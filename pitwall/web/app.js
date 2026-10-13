@@ -162,7 +162,7 @@ function render() {
   } else {
     html = ordered(list).map(card).join("");
   }
-  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + mapSection(list) + portsSection();
+  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + mapSection(list) + schedulesSection(list) + portsSection();
   const bar = usageBar();
   if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
   $("summary").innerHTML = summary(list);
@@ -245,6 +245,8 @@ $("cards").addEventListener("click", (e) => {
   if (mapMode) return setMapMode(mapMode.dataset.mapMode);
   const port = e.target.closest("[data-port]");
   if (port) return portAct(port);
+  const sched = e.target.closest("[data-sched]");
+  if (sched) return schedAct(sched);
   const raceButton = e.target.closest("[data-race]");
   if (raceButton) return raceAct(raceButton);
   const el = e.target.closest("[data-sid]");

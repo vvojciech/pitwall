@@ -42,10 +42,14 @@ function until(ts) {
   return s < 86400 ? clock : `${at.toLocaleDateString([], { weekday: "short" })} ${clock}`;
 }
 
-function scheduleRow(j) {
-  const tip = [j.text, j.human && `Schedule: ${j.human}`, j.reason && `Why: ${j.reason}`,
+function scheduleTip(j) {
+  return [j.text, j.human && `Schedule: ${j.human}`, j.reason && `Why: ${j.reason}`,
     j.expires && `Claude Code deletes it after its run at ${new Date((j.expires - ui.offset) * 1000).toLocaleString()}`]
     .filter(Boolean).join("\n");
+}
+
+function scheduleRow(j) {
+  const tip = scheduleTip(j);
   // The last run before the 7-day limit reads "last in 3h 05m", in amber.
   const prefix = j.final ? ' data-prefix="last "' : "";
   const when = j.stopping ? `<span class="sched-when muted">stopping</span>`
@@ -55,6 +59,36 @@ function scheduleRow(j) {
     <span class="bg-desc">${esc(j.text)}</span>${when}
     <button class="sched-stop" data-act="sched-stop" data-id="${esc(j.id)}" aria-label="Stop this scheduled job"
       title="Stop this scheduled job"${j.stopping ? " disabled" : ""}>${ICON.x}</button></li>`;
+}
+
+// Every agent's scheduled prompts in one list, soonest first, above Ports. Click a row to go to its agent.
+function schedulesSection(list) {
+  const jobs = list.flatMap((s) => (s.schedules || []).map((j) => ({ j, s })))
+    .sort((a, b) => (a.j.next || Infinity) - (b.j.next || Infinity));
+  if (!jobs.length) return "";
+  const rows = jobs.map(({ j, s }) => {
+    const armed = ui.stopping === `sched:${j.id}`;
+    const when = j.stopping ? "stopping" : j.next ? until(j.next) : j.human;
+    const who = s.name || s.tab_name || base(s.cwd);
+    return `<div class="port sched-row${armed ? " armed" : ""}" data-sid="${esc(s.sid)}" title="${esc(scheduleTip(j))}">
+        ${kindIcon(j.kind)}<span class="pnum"${j.next && !j.stopping ? ` data-until="${j.next}"` : ""}>${esc(when)}</span>
+        <span class="pname">${esc(j.text)}</span><span class="pwho">${esc(who)}</span>
+        ${stopButton(armed, `data-sched="${armed ? "stop-yes" : "stop"}" data-sid="${esc(s.sid)}" data-id="${esc(j.id)}"`,
+          "Stop this scheduled prompt", j.stopping)}</div>`;
+  }).join("");
+  return `<section class="group"><h2>Scheduled</h2>${rows}</section>`;
+}
+
+async function schedAct(button) {
+  const { sid, id } = button.dataset;
+  if (button.dataset.sched === "stop") return arm(`sched:${id}`), render();
+  arm(null);
+  button.disabled = true;
+  try {
+    await api("/api/schedule/stop", { sid, id });
+    toast("Asked Claude to cancel it. The row goes when Claude confirms.");
+  } catch (e) { toast(e.message); }
+  render();
 }
 
 // Background work Claude Code reported at its last stop (shells, sub-agents, monitors), then its scheduled prompts.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 (2026-10-13)
+
+- A Scheduled section above Ports lists the scheduled prompts of every agent, soonest first.
+  Click a row to go to its agent.
+- Stop takes two clicks in place: [] turns into a red Stop under the pointer. It resets after
+  3 seconds.
+- Tooltips show at once, not after the browser's delay. The card timer and the top bar counts
+  have tooltips with clock times.
+- The race form says why Start is disabled.
+- Undo and Hand off work after the agent's worktree is removed. Before, they failed with
+  "rev-parse --git-path index ... exit status 128".
+
 ## 0.7.4 (2026-10-12)
 
 - Hand off, Review loop and race diffs work when your git config sets an external diff tool such

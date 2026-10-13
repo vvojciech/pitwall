@@ -212,7 +212,7 @@ async function failureAct(button) {
 // The [] button. The first press arms it: it grows to the left into a red "Stop" under the pointer.
 function stopButton(armed, attrs, what, disabled = false) {
   return `<button class="icon-btn small stop${armed ? " armed" : ""}" ${attrs}
-    title="${esc(armed ? `Press again: ${what}` : `${what} (press twice)`)}"${disabled ? " disabled" : ""}>${MORE_ICON.stop}${armed ? "Stop" : ""}</button>`;
+    title="${esc(what)}"${disabled ? " disabled" : ""}>${MORE_ICON.stop}${armed ? "Stop" : ""}</button>`;
 }
 
 // Arm a two-press Stop button. One button is armed at a time; it disarms after 3 seconds.

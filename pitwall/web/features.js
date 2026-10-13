@@ -117,12 +117,15 @@ function busyPort(f) {
 function portsSection() {
   const list = ui.ports;
   if (!list || !list.length) return "";
-  const rows = list.map((p) => ui.stopping === p.pid
-    ? `<div class="port"><span class="pnum">:${p.port}</span><span class="pname">Stop ${esc(p.command)}?</span>
-        <button class="btn" data-port="stop-yes" data-pid="${p.pid}">Stop</button><button class="btn ghost" data-port="stop-no">Keep</button></div>`
-    : `<div class="port"><span class="pnum">:${p.port}</span><span class="pname">${esc(p.command)} · ${esc(p.project)}</span>
+  // Stop takes two presses on the same button: the first arms it for a few seconds, the second stops.
+  const rows = list.map((p) => {
+    const armed = ui.stopping === p.pid;
+    return `<div class="port${armed ? " armed" : ""}"><span class="pnum">:${p.port}</span>
+        <span class="pname">${armed ? `Press again to stop ${esc(p.command)}` : `${esc(p.command)} · ${esc(p.project)}`}</span>
         <button class="icon-btn small" data-port="open" data-portnum="${p.port}" title="Open in the browser">${MORE_ICON.open}</button>
-        <button class="icon-btn small" data-port="stop" data-pid="${p.pid}" title="Stop">${MORE_ICON.stop}</button></div>`).join("");
+        <button class="icon-btn small stop" data-port="${armed ? "stop-yes" : "stop"}" data-pid="${p.pid}"
+          title="${armed ? "Press again to stop" : "Stop (press twice)"}">${MORE_ICON.stop}</button></div>`;
+  }).join("");
   return `<section class="group"><h2>Ports</h2>${rows}</section>`;
 }
 
@@ -209,9 +212,11 @@ async function failureAct(button) {
 
 async function portAct(button) {
   const kind = button.dataset.port;
-  if (kind === "stop") ui.stopping = Number(button.dataset.pid);
-  else if (kind === "stop-no") ui.stopping = null;
-  else {
+  clearTimeout(portAct.disarm);
+  if (kind === "stop") {
+    ui.stopping = Number(button.dataset.pid);
+    portAct.disarm = setTimeout(() => { ui.stopping = null; render(); }, 3000);
+  } else {
     button.disabled = true;
     try {
       if (kind === "open") await api("/api/ports/open", { port: Number(button.dataset.portnum) });

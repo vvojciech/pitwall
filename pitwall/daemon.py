@@ -142,6 +142,9 @@ class Daemon:
         return reply(404, {"error": "not found"})
 
     async def undo(self, s, path, method):
+        s["snapshots"] = snapshot.live(s["snapshots"])
+        if s.get("redo") and not snapshot.live([s["redo"]]):
+            s["redo"] = None
         if s["state"] in BUSY:
             return reply(409, {"error": "Wait for the agent to finish its turn."})
         if path == "/api/redo":

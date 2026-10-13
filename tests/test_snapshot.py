@@ -82,6 +82,11 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(git(self.root, "diff", "--cached", "--name-only").split(), ["keep.txt"])
         self.assertEqual(git(self.root, "stash", "list"), "")
 
+    def test_live_drops_snapshots_of_a_removed_folder(self):
+        kept = snapshot.take(self.root)
+        gone = {"root": os.path.join(self.root, "removed-worktree"), "tree": kept["tree"]}
+        self.assertEqual(snapshot.live([gone, kept]), [kept])
+
     def test_take_works_from_a_subfolder(self):
         self.write("sub/a.txt", "a")
         snap = snapshot.take(os.path.join(self.root, "sub"))

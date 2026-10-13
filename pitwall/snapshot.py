@@ -73,6 +73,11 @@ def exclude(root, pattern):
             f.write(f"\n{pattern}\n")
 
 
+def live(snapshots):
+    """The snapshots whose work tree still exists. A removed git worktree leaves dead ones behind."""
+    return [snap for snap in snapshots if os.path.isdir(snap["root"])]
+
+
 def take(cwd):
     """Snapshot the work tree that holds cwd. Returns {root, tree}, or None outside git."""
     try:

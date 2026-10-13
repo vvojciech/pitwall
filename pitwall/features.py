@@ -176,7 +176,8 @@ class Features:
         return reply(200, {"ok": True})
 
     def handoff_text(self, s, mode):
-        first = s["snapshots"][0] if s["snapshots"] else None
+        snaps = snapshot.live(s["snapshots"])
+        first = snaps[0] if snaps else None
         diff = snapshot.diff(first["root"], first["tree"]) if first else None
         failures = [f for f in self.failures if same_project(f["cwd"], s["cwd"])]
         return handoff.build(s, mode if mode in handoff.MODES else "continue",

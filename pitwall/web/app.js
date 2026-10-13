@@ -144,8 +144,7 @@ function summary(list) {
     $("bgcount").dataset.html = counts;
     const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
     $("bgcount").title = [background && plural(background, "background task"), jobs.length && plural(jobs.length, "scheduled prompt")]
-      .filter(Boolean).join(", ") + " across all agents" + (isFinite(next) ? `.\nThe next prompt fires at ${clockAt(next)}.` : "")
-      + (jobs.length ? "\nOpen the agent cards to see or stop each one." : "");
+      .filter(Boolean).join(", ") + " across all agents" + (isFinite(next) ? `, next at ${clockAt(next)}` : "");
   }
   return parts.join(" · ") || (list.length ? "All quiet" : "");
 }

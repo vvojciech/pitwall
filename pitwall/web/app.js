@@ -263,7 +263,10 @@ $("cards").addEventListener("input", (e) => {
   if (ui.raceForm && "raceTask" in e.target.dataset) {
     ui.raceForm.task = e.target.value;
     const why = raceBlocker(ui.raceForm), start = document.querySelector('[data-race="start"]');
-    if (start) start.disabled = Boolean(why) || ui.raceBusy;
+    if (start) {
+      start.disabled = Boolean(why) || ui.raceBusy;
+      start.title = why || `Start ${ui.raceForm.claude + ui.raceForm.codex} agents on this task`;
+    }
     const note = document.querySelector(".race-form .why");
     if (note) note.textContent = why;
   }

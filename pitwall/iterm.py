@@ -6,22 +6,13 @@ import re
 
 import iterm2
 
-from pitwall import questions
-from pitwall.colours import BADGES, TAB, is_our_badge, is_our_colour
+from pitwall import questions, settings
+from pitwall.colours import TAB, is_our_badge, is_our_colour, want_for
 
 # The first option of a Claude Code or Codex permission menu, with the cursor on it.
 PROMPT_READY = re.compile(r"^\s*[❯›>]\s*1\.\s*Yes", re.M)
 
 COLOURS = {name: iterm2.Color(*rgb) for name, rgb in TAB.items()}
-
-
-def signal_for(s, unseen):
-    """The tab colour key for a session, or None for the profile's own colour."""
-    if s["state"] in ("waiting_permission", "waiting_input"):
-        return "waiting"
-    if s["state"] in ("done", "failed") and s["sid"] in unseen:
-        return s["state"]
-    return None
 
 
 class Tabs:
@@ -36,7 +27,7 @@ class Tabs:
         session = self.app.get_session_by_id(s["sid"])
         if session is None:
             return
-        want = (signal_for(s, unseen), BADGES.get(s["state"]))
+        want = want_for(s, unseen, settings.current())
         # Nothing is known about a tab until the first pass: it can carry a colour from before a
         # restart, so the first pass always writes, even when no signal is wanted.
         if self.applied.get(s["sid"]) == want:

@@ -11,7 +11,7 @@ import sys
 import time
 import urllib.request
 
-from pitwall import config, snapshot
+from pitwall import config, settings, snapshot
 from pathlib import Path
 
 from pitwall.events import to_event
@@ -53,9 +53,9 @@ def nested():
     return agent_depth(parse_ps(out), os.getpid()) >= 2
 
 
-def share_memory(agent, payload):
+def share_memory(agent, payload, prefs):
     """On SessionStart, print the other agent's notes as context for this session."""
-    if os.environ.get("PITWALL_SHARED_MEMORY") == "0" or not payload.get("cwd"):
+    if os.environ.get("PITWALL_SHARED_MEMORY") == "0" or not prefs["shared_memory"] or not payload.get("cwd"):
         return
     text = context_for(agent, payload["cwd"], Path.home())
     if text:
@@ -66,14 +66,15 @@ def run(agent, name):
     try:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
+        prefs = settings.current()
         if name == "SessionStart":
-            share_memory(agent, payload)
+            share_memory(agent, payload, prefs)
         daemon = config.read_daemon()
         event = to_event(agent, name, payload, os.environ, time.time())
         # An agent run inside another agent's pane (claude -p in a script) shares its tab id.
         if not daemon or not event or nested():
             return
-        if name == "UserPromptSubmit" and event.get("cwd"):
+        if name == "UserPromptSubmit" and event.get("cwd") and prefs["undo"]:
             event["snapshot"] = snapshot.take(event["cwd"])
         post(daemon, "/api/event", event)
     except Exception:  # noqa: BLE001  a status hook must not fail the agent

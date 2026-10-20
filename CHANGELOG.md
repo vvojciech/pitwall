@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 (2026-10-20)
+
+- A **Settings** button turns optional features off. Off hides the feature and stops its work:
+  Ports off stops the port scan, Undo off stops the snapshot before each prompt.
+- Choices live in `~/.pitwall/settings.json`. No file means everything is on, as before.
+
 ## 0.8.0 (2026-10-13)
 
 - A Scheduled section above Ports lists the scheduled prompts of every agent, soonest first.

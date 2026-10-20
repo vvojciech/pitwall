@@ -16,7 +16,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import __version__, config, context, iterm, questions, schedules, snapshot, updates, usage
+from pitwall import __version__, config, context, iterm, questions, schedules, settings, snapshot, updates, usage
 from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
@@ -28,7 +28,7 @@ STATIC = {"/app.css": "text/css; charset=utf-8", "/app.js": "text/javascript; ch
           "/features.js": "text/javascript; charset=utf-8", "/races.js": "text/javascript; charset=utf-8",
           "/usage.js": "text/javascript; charset=utf-8", "/activity.js": "text/javascript; charset=utf-8",
           "/map.js": "text/javascript; charset=utf-8", "/cards.js": "text/javascript; charset=utf-8",
-          "/tooltip.js": "text/javascript; charset=utf-8"}
+          "/tooltip.js": "text/javascript; charset=utf-8", "/settings.js": "text/javascript; charset=utf-8"}
 PAGES = {"/": "index.html", "/activity": "activity.html"}
 BUSY = ("working", "waiting_permission")
 SCAN_SECONDS = 5
@@ -96,6 +96,10 @@ class Daemon:
             if s and data["event"] == "Stop":
                 asyncio.get_running_loop().create_task(self.features.loops.on_stop(s, data.get("last_message")))
             return reply(200, {"ok": True})
+        if path == "/api/settings":
+            if method == "POST":
+                await self.apply_settings(data)
+            return reply(200, {"features": settings.describe()})
         routed = await self.features.route(method, path, query, data)
         if routed:
             return routed
@@ -140,6 +144,18 @@ class Daemon:
         if path.startswith("/api/undo") or path == "/api/redo":
             return await self.undo(s, path, method)
         return reply(404, {"error": "not found"})
+
+    async def apply_settings(self, changes):
+        before = settings.current()
+        after = settings.update(changes)
+        if not after["failed_commands"]:
+            self.features.failures.clear()
+        if after["update_check"] and not before["update_check"]:
+            asyncio.get_running_loop().create_task(self.check_updates())
+        elif not after["update_check"]:
+            self.update = None
+        for s in list(self.sessions.values()):
+            await self.tabs.show(s, self.unseen)
 
     async def undo(self, s, path, method):
         s["snapshots"] = snapshot.live(s["snapshots"])
@@ -186,7 +202,8 @@ class Daemon:
         layout = [[[p.session_id for p in t.sessions] for t in w.tabs] for w in self.app.terminal_windows]
         return {"now": now, "sessions": layout_order(cards, layout), "failures": self.features.failure_cards(),
                 "agents": usage.installed(Path.home()),
-                "version": __version__, "update": self.update if self.update and self.update["behind"] else None}
+                "version": __version__, "update": self.update if self.update and self.update["behind"] else None,
+                "settings": settings.current()}
 
     async def rename(self, s, session, name):
         """Name an agent's card and its iTerm2 tab. An empty name goes back to the defaults."""
@@ -215,9 +232,13 @@ class Daemon:
         if added or before != set(self.sessions):
             self.save()
 
+    async def check_updates(self):
+        if settings.on("update_check"):
+            self.update = await asyncio.to_thread(updates.check, config.REPO)
+
     async def check_updates_forever(self):
         while True:
-            self.update = await asyncio.to_thread(updates.check, config.REPO)
+            await self.check_updates()
             await asyncio.sleep(updates.CHECK_EVERY)
 
     async def scan_forever(self):
@@ -256,8 +277,7 @@ async def main(connection):
         daemon.status.write(s)
     await iterm.clear_stale(app, set(daemon.sessions))
     asyncio.get_running_loop().create_task(daemon.scan_forever())
-    if os.environ.get("PITWALL_UPDATE_CHECK") != "0":
-        asyncio.get_running_loop().create_task(daemon.check_updates_forever())
+    asyncio.get_running_loop().create_task(daemon.check_updates_forever())
     print(f"pitwall: listening on 127.0.0.1:{port}", flush=True)
     async with iterm2.FocusMonitor(connection) as monitor:
         daemon.on_focus(focused_session(app, iterm2.FocusUpdate()))

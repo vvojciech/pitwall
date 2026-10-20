@@ -12,6 +12,17 @@ LEGACY = ((232, 163, 61), (86, 182, 120), (226, 86, 74))
 BADGES = {"waiting_permission": "Needs you", "waiting_input": "Waiting"}
 
 
+def want_for(s, unseen, prefs):
+    """(tab colour key, badge) a session should show, each None for the profile's own value."""
+    colour = None
+    if s["state"] in ("waiting_permission", "waiting_input"):
+        colour = "waiting"
+    elif s["state"] in ("done", "failed") and s["sid"] in unseen:
+        colour = s["state"]
+    return (colour if prefs["tab_colours"] else None,
+            BADGES.get(s["state"]) if prefs["tab_badges"] else None)
+
+
 def is_our_colour(rgb, tolerance=3):
     """True for a colour Pitwall sets or has set, so it is never taken as the user's own."""
     return any(all(abs(a - b) <= tolerance for a, b in zip(rgb, ours)) for ours in (*TAB.values(), *LEGACY))

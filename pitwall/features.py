@@ -11,7 +11,7 @@ from pathlib import Path
 
 import iterm2
 
-from pitwall import config, handoff, mapdata, ports, schedules, snapshot, timeline, usage
+from pitwall import config, handoff, mapdata, ports, schedules, settings, snapshot, timeline, usage
 from pitwall.http import reply
 from pitwall.loops import Loops
 from pitwall.races import Races
@@ -42,7 +42,8 @@ class Features:
         await iterm2.notifications.async_subscribe_to_prompt_notification(self.conn, self._on_prompt, None, [mode])
 
     async def _on_prompt(self, _connection, message):
-        if message.WhichOneof("event") != "command_end" or message.command_end.status in IGNORED_EXITS:
+        if message.WhichOneof("event") != "command_end" or message.command_end.status in IGNORED_EXITS \
+                or not settings.on("failed_commands"):
             return
         sid = message.session
         session = self.d.app.get_session_by_id(sid)
@@ -117,6 +118,8 @@ class Features:
             days = min(max(int(query.get("days") or 7), 1), 30)
             return reply(200, await asyncio.to_thread(usage.report, Path.home(), days))
         if path == "/api/ports":
+            if not settings.on("ports"):
+                return reply(200, {"ports": []})
             return reply(200, {"ports": await asyncio.to_thread(ports.scan, str(Path.home()))})
         if path == "/api/ports/stop":
             listed = {p["pid"] for p in await asyncio.to_thread(ports.scan, str(Path.home()))}

@@ -145,6 +145,12 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 .race-form p { margin: 0 0 8px; }
 .race-form h3 { margin: 0 0 9px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .race-form .why { align-self: center; color: var(--faint); }
+.settings-form { margin: 0; background: var(--card); }
+.settings-form h3 { margin: 8px 0 5px; font-size: 10.5px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+.settings-form h3:first-child { margin-top: 0; }
+.settings-form label.check { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink); margin-bottom: 4px; }
+.settings-form label.check em { color: var(--faint); font-style: normal; }
+.settings-form .row { margin-top: 8px; }
 .race { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: var(--radius); padding: 9px 10px; display: grid; gap: 4px; }
 .race .head { display: flex; gap: 6px; align-items: center; }
 .race .head svg { color: var(--blue); }

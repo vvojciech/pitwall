@@ -4,6 +4,9 @@ const TOKEN = params.get("t") || "";
 const $ = (id) => document.getElementById(id);
 const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: { sid: null, mode: "turn", data: null }, ports: [], stopping: null };
 
+// Is an optional feature on? An older service sends no settings: everything shows, as before.
+const featureOn = (key) => ui.data?.settings?.[key] !== false;
+
 const LABELS = {
   working: "Working", waiting_permission: "Needs permission", waiting_input: "Waiting for you",
   done: "Done", failed: "Failed", idle: "Idle",
@@ -90,7 +93,7 @@ function timerAttr(s) {
 
 function undoPanel(s) {
   const u = ui.undo[s.sid];
-  if (!u) return "";
+  if (!u || !featureOn("undo")) return "";
   if (u.loading) return `<div class="undo" data-stop>Checking what changed…</div>`;
   if (!u.files.length) {
     return `<div class="undo" data-stop><p>Nothing changed since that prompt.</p>
@@ -132,8 +135,8 @@ function summary(list) {
   const waiting = n(["waiting_permission", "waiting_input"]);
   if (waiting) parts.push(`<b>${waiting} waiting</b>`);
   if (n(["working"])) parts.push(`${n(["working"])} working`);
-  const background = list.reduce((sum, s) => sum + (s.background || []).length, 0);
-  const jobs = list.flatMap((s) => s.schedules || []);
+  const background = featureOn("background") ? list.reduce((sum, s) => sum + (s.background || []).length, 0) : 0;
+  const jobs = featureOn("schedules") ? list.flatMap((s) => s.schedules || []) : [];
   const next = Math.min(...jobs.filter((j) => j.next && !j.stopping).map((j) => j.next));
   // Icons with counts keep the top bar on one line: [layers] 2  [clock] 3 · in 4m
   const scheduled = jobs.length ? `<span class="count">${ICON.clock}${jobs.length}</span>${isFinite(next)
@@ -161,8 +164,14 @@ function render() {
   } else {
     html = ordered(list).map(card).join("");
   }
-  if (ui.data) html = raceForm() + racesSection() + failuresSection(ui.data.failures) + html + mapSection(list) + schedulesSection(list) + portsSection();
-  const bar = usageBar();
+  if (ui.data) {
+    const show = (key, part) => (featureOn(key) ? part() : "");
+    html = settingsForm() + show("races", raceForm) + show("races", racesSection)
+      + show("failed_commands", () => failuresSection(ui.data.failures)) + html + show("map", () => mapSection(list))
+      + show("schedules", () => schedulesSection(list)) + show("ports", portsSection);
+  }
+  $("race").hidden = !featureOn("races");
+  const bar = featureOn("plan_limits") ? usageBar() : "";
   if (bar !== ui.usageHtml) { $("usage").innerHTML = bar; ui.usageHtml = bar; }
   $("summary").innerHTML = summary(list);
   updateButton();
@@ -281,11 +290,14 @@ $("usage").addEventListener("click", (e) => {
   if (e.target.closest("[data-usage]")) api("/api/open", {}).catch((err) => toast(err.message));
 });
 
-poll();
 setInterval(() => { if (!document.hidden) poll(); }, 1000);
 setInterval(tick, 1000);
-Promise.all([pollPorts(), pollRaces(), pollUsage()]).then(render);
-setInterval(() => { if (!document.hidden) pollUsage(); }, 60000);
-setInterval(() => { if (!document.hidden) pollPorts(); }, 5000);
-setInterval(() => { if (!document.hidden) pollRaces(); }, 3000);
-setInterval(() => { if (!document.hidden) { pollTimelines(); pollMaps(); } }, 2000);
+// Each poll waits for the first state, so a feature that is off is never polled.
+const every = (ms, key, fn) => setInterval(() => { if (!document.hidden && featureOn(key)) fn(); }, ms);
+poll().then(() => Promise.all([featureOn("ports") && pollPorts(), featureOn("races") && pollRaces(),
+  featureOn("plan_limits") && pollUsage()])).then(render);
+every(60000, "plan_limits", pollUsage);
+every(5000, "ports", pollPorts);
+every(3000, "races", pollRaces);
+every(2000, "timeline", pollTimelines);
+every(2000, "map", pollMaps);

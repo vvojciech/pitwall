@@ -18,7 +18,7 @@ function setOrder(order) {
 // How full the agent's context window is, as a ring. Hover for the numbers.
 function contextRing(s) {
   const c = s.context;
-  if (!c || c.used == null) return "";
+  if (!c || c.used == null || !featureOn("context_ring")) return "";
   const used = Math.max(0, Math.min(100, c.used));
   const level = used >= 90 ? "crit" : used >= 80 ? "warn" : "ok";
   const r = 7, length = 2 * Math.PI * r;
@@ -94,8 +94,8 @@ async function schedAct(button) {
 // Background work Claude Code reported at its last stop (shells, sub-agents, monitors), then its scheduled prompts.
 const BG_SHOWN = 3;
 function backgroundList(s) {
-  const tasks = s.background || [];
-  const jobs = s.schedules || [];
+  const tasks = featureOn("background") ? s.background || [] : [];
+  const jobs = featureOn("schedules") ? s.schedules || [] : [];
   if (!tasks.length && !jobs.length) return "";
   const row = (type, text, status) => `<li>${kindIcon(type)}
     <span class="bg-desc">${esc(text)}</span>${status ? `<span class="bg-status">${esc(status)}</span>` : ""}</li>`;

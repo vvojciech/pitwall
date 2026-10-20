@@ -12,7 +12,7 @@ const AGENT = { claude: "Claude", codex: "Codex" };
 
 function loopStartPanel(s) {
   const l = ui.loopStart[s.sid];
-  if (!l) return "";
+  if (!l || !featureOn("review_loop")) return "";
   const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
     `<button class="${String(v) === String(value) ? "on" : ""}" data-act="loop-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
   return `<div class="panel handoff" data-stop>
@@ -52,18 +52,20 @@ function cardTools(s, busy) {
   const open = ui.timeline[s.sid] ? " on" : "";
   // A card found by the scan has no transcript or task until the agent fires its first hook.
   const known = Boolean(s.agent_session);
-  if (!known && !s.can_undo && !s.can_redo) return "";
-  return `<div class="footer" data-stop>
-    ${known ? `<button class="btn ghost${open}" data-act="timeline">${MORE_ICON.list}Timeline</button>
-    <button class="btn ghost${ui.handoff[s.sid] ? " on" : ""}" data-act="handoff">${MORE_ICON.send}Hand off</button>` : ""}
-    ${known && !s.loop && !s.reviews ? `<button class="btn ghost${ui.loopStart[s.sid] ? " on" : ""}" data-act="loop">${MORE_ICON.loop}Review loop</button>` : ""}
-    ${settled && s.can_redo ? `<button class="btn ghost" data-act="redo" ${busy}>${ICON.redo}Redo</button>` : ""}
-    ${settled && s.can_undo ? `<button class="btn ghost" data-act="undo" ${busy}>${ICON.undo}Undo</button>` : ""}</div>`;
+  const undo = featureOn("undo") && settled;
+  const buttons = [
+    known && featureOn("timeline") && `<button class="btn ghost${open}" data-act="timeline">${MORE_ICON.list}Timeline</button>`,
+    known && featureOn("handoff") && `<button class="btn ghost${ui.handoff[s.sid] ? " on" : ""}" data-act="handoff">${MORE_ICON.send}Hand off</button>`,
+    known && featureOn("review_loop") && !s.loop && !s.reviews && `<button class="btn ghost${ui.loopStart[s.sid] ? " on" : ""}" data-act="loop">${MORE_ICON.loop}Review loop</button>`,
+    undo && s.can_redo && `<button class="btn ghost" data-act="redo" ${busy}>${ICON.redo}Redo</button>`,
+    undo && s.can_undo && `<button class="btn ghost" data-act="undo" ${busy}>${ICON.undo}Undo</button>`,
+  ].filter(Boolean);
+  return buttons.length ? `<div class="footer" data-stop>${buttons.join("")}</div>` : "";
 }
 
 function timelinePanel(s) {
   const t = ui.timeline[s.sid];
-  if (!t) return "";
+  if (!t || !featureOn("timeline")) return "";
   if (!t.items) return `<div class="panel" data-stop>Reading the transcript…</div>`;
   if (!t.items.length) return `<div class="panel" data-stop>No transcript yet. It appears after the agent's first hook event.</div>`;
   const rows = t.items.map((i) => `<li class="k-${i.kind}"><span>${KIND[i.kind] || i.kind}</span><span>${esc(i.text)}</span></li>`).join("");
@@ -76,7 +78,7 @@ const defaultAgent = () => installedOnly([["codex"]]).length ? "codex" : "claude
 
 function handoffPanel(s) {
   const h = ui.handoff[s.sid];
-  if (!h) return "";
+  if (!h || !featureOn("handoff")) return "";
   const seg = (name, options, value) => `<div class="seg">${options.map(([v, label]) =>
     `<button class="${v === value ? "on" : ""}" data-act="handoff-${name}" data-value="${v}">${label}</button>`).join("")}</div>`;
   return `<div class="panel handoff" data-stop>
@@ -249,7 +251,7 @@ async function pollTimelines() {
 // which restarts the service, and iTerm2 then reloads the panel at the new address.
 const UPDATE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>';
 function updateButton() {
-  const b = $("update"), u = ui.data && ui.data.update;
+  const b = $("update"), u = featureOn("update_check") && ui.data && ui.data.update;
   if (ui.updating) {
     b.hidden = false; b.disabled = true; b.innerHTML = "Updating…";
     return;

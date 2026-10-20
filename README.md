@@ -133,12 +133,30 @@ Then:
 | Adds 10 hooks to `~/.claude/settings.json` and 7 to `~/.codex/hooks.json`. Your other hooks stay. A backup is written next to each file it changes. | `pitwall uninstall` |
 | Wraps your Claude Code status line command. The wrapper saves its input (which holds the plan limits) to `~/.pitwall/`, then runs your command with the same input. Only the plan limits change: an idle tab gets the newest limits of all sessions, not the limits of its last reply. | `pitwall uninstall` puts your command back |
 | Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
-| Keeps state, logs and caches in `~/.pitwall/`. | Delete the folder |
+| Keeps state, settings, logs and caches in `~/.pitwall/`. | Delete the folder |
 
-Settings:
+## Settings
 
-- `PITWALL_SHARED_MEMORY=0` turns off shared memory. Set it in the environment that starts your
-  agents.
+Everything is on until you turn it off. Click the sliders button in the top bar of the panel and
+untick what you don't use. A feature that is off is gone from the panel and stops its work: no
+port scan, no snapshot before each prompt, no tab colour, no `git fetch`.
+
+Agent cards, Allow and Deny, and question answers are always on.
+
+The choices live in `~/.pitwall/settings.json`, which you can also edit by hand. A key that is
+missing is on:
+
+```json
+{"ports": false, "undo": false, "tab_badges": false}
+```
+
+The keys: `races`, `failed_commands`, `map`, `schedules`, `background`, `ports`, `plan_limits`,
+`context_ring`, `timeline`, `handoff`, `review_loop`, `undo`, `tab_colours`, `tab_badges`,
+`shared_memory`, `update_check`.
+
+The older environment variables still work, and win over the file:
+
+- `PITWALL_SHARED_MEMORY=0` turns off shared memory for agents started with it.
 - `launchctl setenv PITWALL_UPDATE_CHECK 0`, then `pitwall install`, turns off the check for a
   newer version.
 

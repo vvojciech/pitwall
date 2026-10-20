@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 (2026-10-20)
+
+- A **Settings** button in the top bar turns optional features off: agent races, failed
+  commands, code map, scheduled prompts, background work, ports, plan limits, context ring,
+  timeline, hand off, review loop, undo, tab colours, tab badges, shared memory and the update
+  check. A feature that is off leaves the panel and stops its work, so turning off Ports stops
+  the scan every 5 seconds and turning off Undo stops the snapshot before each prompt.
+- The choices are kept in `~/.pitwall/settings.json`. Pitwall reads a hand edit within a second.
+  Without the file, everything is on, as before.
+
 ## 0.8.0 (2026-10-13)
 
 - A Scheduled section above Ports lists the scheduled prompts of every agent, soonest first.

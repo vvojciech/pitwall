@@ -13,6 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from pitwall.codemap import build  # noqa: E402
 from pitwall.schedules import view  # noqa: E402
+from pitwall.settings import DEFAULTS, FEATURES  # noqa: E402
 
 WEB = os.path.join(ROOT, "pitwall", "web")
 NOW = time.time()
@@ -98,8 +99,17 @@ def code_map(mode):
     return g
 
 
+SETTINGS = dict(DEFAULTS)  # in memory: the demo never touches ~/.pitwall
+
+
+def describe():
+    return {"features": [{"key": k, "group": g, "label": label, "hint": hint, "on": SETTINGS[k], "locked": None}
+                         for k, g, label, hint in FEATURES]}
+
+
 ROUTES = {
-    "/api/state": lambda q: {"now": time.time(), "sessions": SESSIONS, "failures": FAILURES},
+    "/api/state": lambda q: {"now": time.time(), "sessions": SESSIONS, "failures": FAILURES, "settings": SETTINGS},
+    "/api/settings": lambda q: describe(),
     "/api/ports": lambda q: {"ports": [{"pid": 4211, "port": 3000, "command": "node", "project": "storefront"},
                                        {"pid": 5120, "port": 5173, "command": "node", "project": "acme-shop"}]},
     "/api/races": lambda q: {"races": [], "projects": [SHOP]},
@@ -135,7 +145,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    do_POST = do_GET
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        if self.path.startswith("/api/settings") and body:
+            SETTINGS.update({k: v for k, v in json.loads(body).items() if k in SETTINGS and isinstance(v, bool)})
+        self.do_GET()
 
 
 if __name__ == "__main__":

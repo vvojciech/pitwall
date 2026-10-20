@@ -1,6 +1,6 @@
 import unittest
 
-from pitwall.usage import claude_limits
+from pitwall.usage import claude_limits, windows_left
 
 NOW = 1_791_760_000
 
@@ -30,6 +30,17 @@ class ClaudeLimitsTests(unittest.TestCase):
 
     def test_no_limits_gives_none(self):
         self.assertIsNone(claude_limits([{}, None], NOW))
+
+
+class WindowsLeftTests(unittest.TestCase):
+    def test_counts_the_five_hour_windows_until_the_week_resets(self):
+        # The current window, then five more in the 25 hours after it ends.
+        limits = {"five_hour": {"resets_at": NOW + 3600}, "week": {"resets_at": NOW + 3600 + 25 * 3600}}
+        self.assertEqual(windows_left(limits), 6)
+
+    def test_a_missing_window_gives_none(self):
+        self.assertIsNone(windows_left({"five_hour": None, "week": {"resets_at": NOW}}))
+        self.assertIsNone(windows_left(None))
 
 
 if __name__ == "__main__":

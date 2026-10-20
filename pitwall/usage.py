@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 import time
 from datetime import date, timedelta
@@ -76,6 +77,14 @@ def claude_limits(snapshots, now):
     return out if any(out.values()) else None
 
 
+def windows_left(limits):
+    """The 5-hour windows still to come before the weekly limit resets, the current one included."""
+    five, week = (limits or {}).get("five_hour"), (limits or {}).get("week")
+    if not (five and week and five.get("resets_at") and week.get("resets_at")):
+        return None
+    return max(0, math.ceil((week["resets_at"] - five["resets_at"]) / (5 * 3600))) + 1
+
+
 def claude_snapshots():
     """The `rate_limits` of every saved Claude status line, and the time of the newest save."""
     snapshots, seen = [], 0
@@ -94,14 +103,14 @@ def limits(home):
     snapshots, seen = claude_snapshots()
     claude = claude_limits(snapshots, time.time())
     if claude:
-        out["claude"] = dict(claude, seen=seen)
+        out["claude"] = dict(claude, seen=seen, windows_left=windows_left(claude))
     newest = max(home.glob(".codex/sessions/*/*/*/*.jsonl"), key=lambda p: p.stat().st_mtime, default=None)
     if newest:
         with open(newest, "rb") as f:
             f.seek(max(0, newest.stat().st_size - TAIL_BYTES))
             found = codex_limits(f.read().decode(errors="replace").splitlines())
         if found:
-            out["codex"] = dict(found, seen=newest.stat().st_mtime)
+            out["codex"] = dict(found, seen=newest.stat().st_mtime, windows_left=windows_left(found))
     return out
 
 

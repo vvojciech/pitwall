@@ -40,7 +40,8 @@ CODEX = [
     json.dumps({"timestamp": "2026-10-10T10:01:00Z", "type": "event_msg", "payload": {
         "type": "token_count", "info": {"total_token_usage": {"total_tokens": 5000}},
         "rate_limits": {"primary": {"used_percent": 12.0, "window_minutes": 300, "resets_at": 1791638445},
-                        "secondary": {"used_percent": 3.0, "window_minutes": 10080, "resets_at": 1791966425}}}}),
+                        "secondary": {"used_percent": 3.0, "window_minutes": 10080, "resets_at": 1791966425},
+                        "credits": {"has_credits": True, "unlimited": False, "balance": "12"}}}}),
     json.dumps({"timestamp": "2026-10-10T10:02:00Z", "type": "event_msg", "payload": {
         "type": "token_count", "info": {"total_token_usage": {"total_tokens": 8000}}}}),
 ]
@@ -66,6 +67,7 @@ class ActivityTests(unittest.TestCase):
         self.assertEqual(limits["five_hour"], {"used": 12.0, "resets_at": 1791638445, "window": 18000})
         self.assertEqual(limits["week"]["window"], 604800)
         self.assertEqual(limits["week"], {"used": 3.0, "resets_at": 1791966425, "window": 604800})
+        self.assertEqual(limits["credits"], {"has_credits": True, "unlimited": False, "balance": "12"})
 
 
 if __name__ == "__main__":

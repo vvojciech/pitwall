@@ -18,7 +18,10 @@ const fmt = {
     if (!epoch) return "";
     const d = new Date(epoch * 1000);
     const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    return d.toDateString() === new Date().toDateString() ? time : `${d.toLocaleDateString("en-GB", { weekday: "short" })} ${time}`;
+    if (d.toDateString() === new Date().toDateString()) return time;
+    // Past six days a weekday alone is ambiguous, so add the date.
+    const far = epoch - Date.now() / 1000 > 6 * 86400;
+    return `${d.toLocaleDateString("en-GB", far ? { weekday: "short", day: "numeric", month: "short" } : { weekday: "short" })} ${time}`;
   },
 };
 
@@ -52,9 +55,21 @@ function meter(label, w) {
     <span class="mval ${level}">${used}%</span><span class="mreset">${w.resets_at ? `resets ${fmt.reset(w.resets_at)}` : ""}</span></div>`;
 }
 
+// Codex credits, shown only when there are some.
+function creditsText(l) {
+  const c = l && l.credits;
+  if (!c || !(c.has_credits || c.unlimited)) return "";
+  return c.unlimited ? "Unlimited credits" : `${c.balance} credits`;
+}
+
+function windowsText(l) {
+  return l && l.windows_left && l.week ? `${l.windows_left} five-hour windows until the weekly reset` : "";
+}
+
 function limitsBlock(agent, l) {
   const name = agent === "claude" ? "Claude" : "Codex";
-  const body = l ? meter("5 hours", l.five_hour) + meter("Week", l.week)
+  const notes = [creditsText(l), windowsText(l)].filter(Boolean);
+  const body = l ? meter("5 hours", l.five_hour) + meter("Week", l.week) + notes.map((n) => `<p class="mnote">${n}</p>`).join("")
     : `<p class="mnone">${agent === "claude" ? "Shows after Claude Code's next reply." : "Shows after Codex's next reply."}</p>`;
   return `<div class="limits"><span class="agent ${agent}">${name}</span>${body}</div>`;
 }
@@ -75,7 +90,9 @@ function usageBar() {
   if (!u) return "";
   const row = (agent, name) => {
     const l = u.limits[agent];
-    return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>`;
+    const extra = creditsText(l);
+    return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
+      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}`;
   };
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";

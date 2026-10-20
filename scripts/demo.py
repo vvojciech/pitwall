@@ -80,8 +80,9 @@ def activity(days):
             rows.append({"day": day, "project": project, "agent": agent, "active": int(h * 3600), "prompts": int(h * 9),
                          "tokens": int(h * 4.2e6), "files": int(h * 6), "commands": int(h * 40)})
     H5, WK = 5 * 3600, 7 * 86400
-    limits = {"claude": {"five_hour": {"used": 64, "resets_at": NOW + 5400, "window": H5}, "week": {"used": 38, "resets_at": NOW + 300000, "window": WK}},
-              "codex": {"five_hour": {"used": 22, "resets_at": NOW + 9000, "window": H5}, "week": {"used": 81, "resets_at": NOW + 200000, "window": WK}}}
+    limits = {"claude": {"five_hour": {"used": 64, "resets_at": NOW + 5400, "window": H5}, "week": {"used": 38, "resets_at": NOW + 300000, "window": WK}, "windows_left": 18},
+              "codex": {"five_hour": {"used": 22, "resets_at": NOW + 9000, "window": H5}, "week": {"used": 81, "resets_at": NOW + 200000, "window": WK},
+                        "credits": {"has_credits": True, "unlimited": False, "balance": "40"}, "windows_left": 40}}
     today = [r for r in rows if r["day"] == time.strftime("%Y-%m-%d")]
     return {"days": days, "rows": rows, "limits": limits,
             "today": {k: sum(r[k] for r in today) for k in ("active", "prompts", "tokens", "files", "commands")}}

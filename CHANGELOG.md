@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Codex credits show next to the Codex limits when you have some.
+- The activity page shows how many five-hour windows are left before the weekly reset.
+- Reset times more than six days out show the date, not only the weekday.
+
 ## 0.9.0 (2026-10-20)
 
 - A **Settings** button turns optional features off. Off hides the feature and stops its work:

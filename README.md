@@ -137,14 +137,8 @@ Then:
 
 ## Settings
 
-Everything is on until you turn it off. Click the sliders button in the top bar of the panel and
-untick what you don't use. A feature that is off is gone from the panel and stops its work: no
-port scan, no snapshot before each prompt, no tab colour, no `git fetch`.
-
-Agent cards, Allow and Deny, and question answers are always on.
-
-The choices live in `~/.pitwall/settings.json`, which you can also edit by hand. A key that is
-missing is on:
+The sliders button in the top bar turns features off. A feature that is off leaves the panel
+and stops its work. The choices live in `~/.pitwall/settings.json`; a missing key is on:
 
 ```json
 {"ports": false, "undo": false, "tab_badges": false}
@@ -154,7 +148,7 @@ The keys: `races`, `failed_commands`, `map`, `schedules`, `background`, `ports`,
 `context_ring`, `timeline`, `handoff`, `review_loop`, `undo`, `tab_colours`, `tab_badges`,
 `shared_memory`, `update_check`.
 
-The older environment variables still work, and win over the file:
+These still work and win over the file:
 
 - `PITWALL_SHARED_MEMORY=0` turns off shared memory for agents started with it.
 - `launchctl setenv PITWALL_UPDATE_CHECK 0`, then `pitwall install`, turns off the check for a

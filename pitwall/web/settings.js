@@ -1,5 +1,5 @@
 "use strict";
-// Settings: switch optional features off. The service keeps them in ~/.pitwall/settings.json. Uses app.js globals.
+// Settings: switch optional features off. Uses app.js globals.
 
 function settingsForm() {
   const f = ui.settingsForm;
@@ -24,19 +24,19 @@ async function toggleSettings() {
 }
 
 async function saveSetting(input) {
-  input.blur();  // a focused input holds back the next render
+  input.blur();  // render() skips while an input has focus
   input.disabled = true;
   try {
     const res = await api("/api/settings", { [input.dataset.setting]: input.checked });
     if (ui.settingsForm) ui.settingsForm.features = res.features;
   } catch (e) { toast(e.message); }
-  await poll();  // the new settings arrive with the state; a failed save snaps the box back
+  await poll();
   if (featureOn("ports")) await pollPorts();
   if (featureOn("plan_limits")) await pollUsage();
   render();
 }
 
-// Loads before app.js, so render() always finds settingsForm.
+// Loads before app.js, so no $ here.
 document.getElementById("settings").addEventListener("click", toggleSettings);
 document.getElementById("cards").addEventListener("change", (e) => { if ("setting" in e.target.dataset) saveSetting(e.target); });
 document.getElementById("cards").addEventListener("click", (e) => { if (e.target.closest("[data-setting-close]")) toggleSettings(); });

@@ -4,7 +4,7 @@ const TOKEN = params.get("t") || "";
 const $ = (id) => document.getElementById(id);
 const ui = { undo: {}, pending: {}, data: null, offset: 0, html: "", timeline: {}, handoff: {}, loopStart: {}, map: { sid: null, mode: "turn", data: null }, ports: [], stopping: null };
 
-// Is an optional feature on? An older service sends no settings: everything shows, as before.
+// An older service sends no settings: everything shows.
 const featureOn = (key) => ui.data?.settings?.[key] !== false;
 
 const LABELS = {
@@ -292,7 +292,6 @@ $("usage").addEventListener("click", (e) => {
 
 setInterval(() => { if (!document.hidden) poll(); }, 1000);
 setInterval(tick, 1000);
-// Each poll waits for the first state, so a feature that is off is never polled.
 const every = (ms, key, fn) => setInterval(() => { if (!document.hidden && featureOn(key)) fn(); }, ms);
 poll().then(() => Promise.all([featureOn("ports") && pollPorts(), featureOn("races") && pollRaces(),
   featureOn("plan_limits") && pollUsage()])).then(render);

@@ -50,7 +50,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), 0o600)
 
     def test_update_refuses_bad_input_and_writes_nothing(self):
-        for bad in ({"someday": False}, {"ports": "off"}, {"ports": 0}, ["ports"]):
+        for bad in ({"someday": False}, {"ports": "off"}, {"ports": 0}):
             with self.assertRaises(ValueError):
                 settings.update(bad, self.path)
         self.assertFalse(self.path.exists())

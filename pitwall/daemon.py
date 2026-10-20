@@ -146,7 +146,6 @@ class Daemon:
         return reply(404, {"error": "not found"})
 
     async def apply_settings(self, changes):
-        """Save the user's choices, then stop or start the work behind them at once."""
         before = settings.current()
         after = settings.update(changes)
         if not after["failed_commands"]:
@@ -155,7 +154,7 @@ class Daemon:
             asyncio.get_running_loop().create_task(self.check_updates())
         elif not after["update_check"]:
             self.update = None
-        for s in list(self.sessions.values()):  # colours and badges on or off
+        for s in list(self.sessions.values()):
             await self.tabs.show(s, self.unseen)
 
     async def undo(self, s, path, method):

@@ -34,17 +34,17 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 ### Steer from one place
 
-**Allow or Deny** a permission prompt from the card. The agent keeps going in its own tab.
+**Allow or Deny** a permission prompt from the card.
 
-**Answer Claude's questions** on the card. One click for a single choice. Pick several and press Send for the rest.
+**Answer Claude's questions** on the card, with one click or several.
 
-**Undo a turn.** Pitwall takes a snapshot before every prompt. If a turn goes wrong, see the files it touched and put them back. Changed your mind? Redo.
+**Undo a turn.** Put back the files a bad turn touched. Redo if you change your mind.
 
 **Hand off** a task with its diff and failed commands to a fresh Claude or Codex.
 
-**Review loops.** A second agent reviews the first one's work, round after round, until it says APPROVED.
+**Review loops.** A second agent reviews the work until it says APPROVED.
 
-**Agent races.** Give one task to several agents, each in its own git worktree, and keep the best diff.
+**Agent races.** Several agents, one task, one worktree each. Keep the best diff.
 
 </td>
 </tr>
@@ -56,19 +56,19 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 ### See what each agent is doing
 
-**One card per agent**, in tab order or with the ones that need you first. State, task, last action and a timer. Click a card to jump to that pane.
+**One card per agent** with state, task, last action and a timer. Click it to jump to the pane.
 
-**Tab colours.** A tab turns dark amber when its agent waits for you, dark green when it finishes and dark red when it fails.
+**Tab colours.** Amber when the agent waits for you, green when it is done, red when it fails.
 
-**Context ring.** How full each agent's context window is, amber from 80%, red from 90%.
+**Context ring.** How full each context window is.
 
-**Background work.** Shells, sub-agents and monitors that still run after a turn ends.
+**Background work.** Shells, sub-agents and monitors that outlive a turn.
 
-**Scheduled prompts.** Each `/loop`, repeating job and "remind me" of a Claude Code session, with a live countdown to its next run and a button that stops it. The top bar shows how many are scheduled and when the next one runs.
+**Scheduled prompts.** Claude Code's `/loop` jobs and reminders, with a countdown and a Stop button.
 
-**Code map** of the active tab's work: files read, files edited, the file it is on now, and the files that import an edit, with a warning when no test covers it.
+**Code map.** Files read and edited, and the files that import an edit, with a warning when no test covers it.
 
-**Plan limits** for Claude and ChatGPT, pinned to the bottom, with a mark for the time passed in each window, Codex credits, and an activity page with time, prompts and tokens per day and per project.
+**Plan limits** for Claude and Codex, and an activity page with time, prompts and tokens per day.
 
 </td>
 <td width="42%"><img src="docs/images/map.png" alt="The code map: the edited files cart.ts, CartSummary.tsx and route.ts, the files that import them, and a warning that two edits have no test that imports them"></td>
@@ -77,14 +77,11 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 ### And the small things
 
-- **Failed commands.** A command fails in a shell tab: send it to the agent in that project in
-  one click.
-- **Busy ports.** `EADDRINUSE`? The panel names the process on the port and can stop it.
-- **Shared memory.** Codex starts with Claude Code's notes for the project, and Claude Code
-  starts with Codex's.
-- **Rename agents.** Double-click a name. The tab takes the same name.
-- **One-click updates.** When a newer Pitwall is on GitHub, an **Update** button shows in the
-  top bar.
+- **Failed commands** in a shell tab go to that project's agent in one click.
+- **Busy ports.** `EADDRINUSE`? See the process on the port and stop it.
+- **Shared memory.** Claude Code and Codex start with each other's project notes.
+- **Rename agents** with a double-click. The tab follows.
+- **One-click updates** from the top bar.
 
 <p align="center"><img src="docs/images/activity.png" alt="The activity page: totals, agent time per day for Claude and Codex, plan limits and projects"></p>
 
@@ -126,19 +123,27 @@ Then:
 | `pitwall activity` | Open the activity page |
 | `pitwall uninstall` | Remove the hooks and the status line wrapper, and stop the service |
 
-## What install changes on your Mac
+<details>
+<summary>What install changes on your Mac</summary>
 
 | Change | Undo |
 |---|---|
-| Adds 10 hooks to `~/.claude/settings.json` and 7 to `~/.codex/hooks.json`. Your other hooks stay. A backup is written next to each file it changes. | `pitwall uninstall` |
-| Wraps your Claude Code status line command. The wrapper saves its input (which holds the plan limits) to `~/.pitwall/`, then runs your command with the same input. Only the plan limits change: an idle tab gets the newest limits of all sessions, not the limits of its last reply. | `pitwall uninstall` puts your command back |
+| Adds 10 hooks to `~/.claude/settings.json` and 7 to `~/.codex/hooks.json`. Your other hooks stay, and each changed file gets a backup. | `pitwall uninstall` |
+| Wraps your Claude Code status line command to save the plan limits. Your command still runs, and an idle tab gets the newest limits. | `pitwall uninstall` puts your command back |
 | Adds the LaunchAgent `com.vvojciech.pitwall`, which runs the service from `~/.pitwall/venv`. | `pitwall uninstall` |
 | Keeps state, settings, logs and caches in `~/.pitwall/`. | Delete the folder |
+
+</details>
 
 ## Settings
 
 The sliders button in the top bar turns features off. A feature that is off leaves the panel
-and stops its work. The choices live in `~/.pitwall/settings.json`; a missing key is on:
+and stops its work.
+
+<details>
+<summary>The settings file and its keys</summary>
+
+The choices live in `~/.pitwall/settings.json`. A missing key is on:
 
 ```json
 {"ports": false, "undo": false, "tab_badges": false}
@@ -153,6 +158,8 @@ These still work and win over the file:
 - `PITWALL_SHARED_MEMORY=0` turns off shared memory for agents started with it.
 - `launchctl setenv PITWALL_UPDATE_CHECK 0`, then `pitwall install`, turns off the check for a
   newer version.
+
+</details>
 
 ## How it works
 
@@ -171,10 +178,14 @@ These still work and win over the file:
 
 ## Security and privacy
 
-- **Nothing leaves your Mac.** There is no account, server or telemetry. Usage numbers come from
-  the transcripts that Claude Code and Codex already keep on disk. The only network call is a
-  `git fetch` from GitHub every 6 hours, to show the **Update** button when a newer version is
-  out. It sends nothing about you or your agents.
+**Nothing leaves your Mac.** There is no account, server or telemetry. Usage numbers come from
+the transcripts that Claude Code and Codex already keep on disk. The only network call is a
+`git fetch` from GitHub every 6 hours, to check for a newer version. It sends nothing about you
+or your agents.
+
+<details>
+<summary>How the service and the keystrokes are protected</summary>
+
 - **Only you can use the service.** It listens on `127.0.0.1` only. It makes a new random token
   at each start and refuses each request without it. The token is in `~/.pitwall/daemon.json`,
   which only your user can read, so a web page or another user cannot drive your agents.
@@ -183,6 +194,8 @@ These still work and win over the file:
   typed during its turn.
 - **Stop asks first, and checks again.** Stopping a process asks for a confirmation, and Pitwall
   checks that the process still holds the port.
+
+</details>
 
 Found a security problem? Open a private security advisory on GitHub.
 
@@ -212,8 +225,7 @@ Found a security problem? Open a private security advisory on GitHub.
 - The code map reads imports for JavaScript, TypeScript and Python.
 - Notifications have no Allow or Deny buttons.
 - The activity page opens in your browser.
-- Scheduled prompts are shown for Claude Code only. Codex CLI has no scheduler. Stop works by
-  asking the agent to cancel the job, because Claude Code has no outside control for it.
+- Stop on a scheduled prompt asks the agent to cancel the job. Claude Code has no outside control for it.
 
 ## Development
 

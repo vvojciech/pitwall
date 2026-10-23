@@ -12,7 +12,7 @@ from pitwall import config
 from pitwall.activity import codex_limits, summarize
 
 CACHE = config.HOME / "activity-cache.json"
-STATUS = config.HOME / "claude-status.json"
+LIMITS_SEEN = config.HOME / "limits-seen.json"
 TAIL_BYTES = 400_000  # Codex limits are near the end of its newest transcript
 KEEP_DAYS = 30  # the longest range the activity page shows
 
@@ -54,18 +54,20 @@ def activity(home, days=7):
 def newest_rate_limits(snapshots, now):
     """The newest value of each window across the `rate_limits` of all sessions, in Claude's format.
 
-    An idle session re-renders its status line with the limits of its last reply, so no one
-    snapshot is current. Use only grows inside a window, so the latest reset, then the highest
-    use, is the newest value. A window that has reset is left out: its new use is not known yet.
+    `snapshots` are (changed, rate_limits) pairs: `changed` is when that session's limits last
+    changed. An idle session re-renders its status line with the limits of its last reply, so no
+    one snapshot is current, and a limit reset drops the use but keeps the reset time. So the
+    latest reset, then the latest change, is the newest value. A window that has reset is left
+    out: its new use is not known yet.
     """
     out = {}
-    for s in snapshots:
+    for changed, s in snapshots:
         for key, w in (s.items() if isinstance(s, dict) else ()):
             if not isinstance(w, dict) or w.get("used_percentage") is None or not w.get("resets_at"):
                 continue
-            if key not in out or (w["resets_at"], w["used_percentage"]) > (out[key]["resets_at"], out[key]["used_percentage"]):
-                out[key] = w
-    return {k: w for k, w in out.items() if w["resets_at"] > now}
+            if key not in out or (w["resets_at"], changed) > out[key][0]:
+                out[key] = (w["resets_at"], changed), w
+    return {k: w for k, (_, w) in out.items() if w["resets_at"] > now}
 
 
 def claude_limits(snapshots, now):
@@ -86,14 +88,30 @@ def windows_left(limits):
 
 
 def claude_snapshots():
-    """The `rate_limits` of every saved Claude status line, and the time of the newest save."""
-    snapshots, seen = [], 0
-    for path in [STATUS, *(config.HOME / "status").glob("*.json")]:
+    """(changed, rate_limits) of every saved Claude session status line, and the newest save time.
+
+    A file's time moves on every render, so keep when its limits last changed in LIMITS_SEEN.
+    """
+    try:
+        known = json.loads(LIMITS_SEEN.read_text())
+    except (OSError, ValueError):
+        known = {}
+    snapshots, seen, now_known = [], 0, {}
+    for path in (config.HOME / "status").glob("*.json"):
         try:
-            snapshots.append(json.loads(path.read_text()).get("rate_limits"))
-            seen = max(seen, path.stat().st_mtime)
+            limits, mtime = json.loads(path.read_text()).get("rate_limits"), path.stat().st_mtime
         except (OSError, ValueError, AttributeError):
-            pass
+            continue
+        prior = known.get(path.name)
+        changed = prior[1] if prior and prior[0] == limits else mtime
+        now_known[path.name] = [limits, changed]
+        snapshots.append((changed, limits))
+        seen = max(seen, mtime)
+    if now_known != known:
+        try:
+            config.write_private(LIMITS_SEEN, json.dumps(now_known))
+        except OSError:
+            pass  # another status line wrote it at the same time; the next read retries
     return snapshots, seen
 
 

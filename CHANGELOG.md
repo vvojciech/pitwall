@@ -5,6 +5,8 @@
 - Codex credits show next to the Codex limits when you have some.
 - The activity page shows how many five-hour windows are left before the weekly reset.
 - Reset times more than six days out show the date, not only the weekday.
+- After a limit reset, the Claude bars show the new use. Before, a session that saw the old,
+  higher use kept it on screen until the window ended.
 
 ## 0.9.0 (2026-10-20)
 

@@ -40,12 +40,25 @@ class StatusLineTests(unittest.TestCase):
         run = lambda sid, limits: subprocess.run(
             ["bash", str(REPO / "bin/pitwall-statusline")], input=json.dumps({"session_id": sid, "rate_limits": limits}),
             capture_output=True, text=True, env=dict(os.environ, PITWALL_HOME=str(self.home))).stdout
+        idle = {"seven_day": {"used_percentage": 69, "resets_at": reset}}
+        run("idle-2", idle)
         run("busy-1", {"five_hour": {"used_percentage": 4, "resets_at": reset},
                        "seven_day": {"used_percentage": 84, "resets_at": reset}})
-        out = json.loads(run("idle-2", {"seven_day": {"used_percentage": 69, "resets_at": reset}}))
+        out = json.loads(run("idle-2", idle))
         self.assertEqual(out["session_id"], "idle-2")
         self.assertEqual(out["rate_limits"], {"five_hour": {"used_percentage": 4, "resets_at": reset},
                                               "seven_day": {"used_percentage": 84, "resets_at": reset}})
+
+    def test_a_limit_reset_beats_the_higher_use_before_it(self):
+        (self.home / "statusline-command").write_text("cat")
+        reset = int(time.time()) + 3600
+        run = lambda sid, used: subprocess.run(
+            ["bash", str(REPO / "bin/pitwall-statusline")],
+            input=json.dumps({"session_id": sid, "rate_limits": {"seven_day": {"used_percentage": used, "resets_at": reset}}}),
+            capture_output=True, text=True, env=dict(os.environ, PITWALL_HOME=str(self.home))).stdout
+        run("before-1", 90)
+        out = json.loads(run("after-2", 11))
+        self.assertEqual(out["rate_limits"]["seven_day"]["used_percentage"], 11)
 
     def test_a_strange_session_id_is_not_used_as_a_file_name(self):
         subprocess.run(["bash", str(REPO / "bin/pitwall-statusline")], input='{"session_id":"../../evil"}',

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.1 (2026-10-23)
 
 - Codex credits show next to the Codex limits when you have some.
 - The activity page shows how many five-hour windows are left before the weekly reset.

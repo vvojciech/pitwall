@@ -20,7 +20,7 @@ from pitwall import __version__, config, context, iterm, questions, schedules, s
 from pitwall.events import prompt_text
 from pitwall.features import Features
 from pitwall.http import reply, serve
-from pitwall.state import apply, discover, layout_order
+from pitwall.state import apply, discover, layout_order, pane_owners, rebound
 from pitwall.status import NativeStatus
 
 WEB = Path(__file__).parent / "web"
@@ -42,6 +42,7 @@ class Daemon:
         self.sessions = self.load()
         self.unseen = set()
         self.focused = None
+        self.live, self.owners = set(), {}  # live pane ids and pane_owners(), from the last scan
         self.update = None  # {"behind", "latest"} from the last check
 
     def url(self, page=""):
@@ -88,6 +89,7 @@ class Daemon:
             return reply(403, {"error": "bad token"})
         data = json.loads(body) if body else {}
         if path == "/api/event" and method == "POST":
+            data = rebound(data, self.owners, self.live)
             s = apply(self.sessions, data)
             if s:
                 self.changed(s)
@@ -221,7 +223,10 @@ class Daemon:
                 for session in tab.sessions:
                     panes.append({"sid": session.session_id,
                                   "job": await session.async_get_variable("jobName"),
-                                  "cwd": await session.async_get_variable("path")})
+                                  "cwd": await session.async_get_variable("path"),
+                                  "job_pid": await session.async_get_variable("jobPid")})
+        self.live = {p["sid"] for p in panes}
+        self.owners = pane_owners(panes)
         before = set(self.sessions)
         added = discover(self.sessions, panes, time.time())
         for sid in before - set(self.sessions):

@@ -55,6 +55,23 @@ def discover(sessions, panes, ts):
     return added
 
 
+def rebound(event, owners, live):
+    """Point an event from a tab id iTerm2 no longer has at the live tab running the same agent.
+
+    iTerm2 gives every tab a new id when it restarts and keeps the running jobs, so an agent started
+    before the restart still reports its old id. `owners` maps each live pane's job pid to its id.
+    """
+    if not live or event.get("sid") in live or not event.get("agent_pid"):
+        return event
+    sid = owners.get(event["agent_pid"])
+    return dict(event, sid=sid) if sid else event
+
+
+def pane_owners(panes):
+    """{job pid: pane id} of the live panes, for rebound."""
+    return {p["job_pid"]: p["sid"] for p in panes if p.get("job_pid")}
+
+
 def new_session(event):
     return {
         "sid": event["sid"],

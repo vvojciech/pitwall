@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.2 (2026-11-06)
 
 - Cards of agents started before iTerm2 restarted keep updating. iTerm2 gives every tab a new id
   when it restarts, and those agents still reported the old one.

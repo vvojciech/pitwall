@@ -48,9 +48,25 @@ def agent_depth(table, pid):
     return depth
 
 
-def nested():
+def agent_pid(table, pid):
+    """The pid of the nearest agent process above pid: the job iTerm2 reports for its tab."""
+    seen = set()
+    while pid in table and pid not in seen:
+        seen.add(pid)
+        parent, command = table[pid]
+        if agent_of(command):
+            return pid
+        pid = parent
+    return None
+
+
+def process_table():
     out = subprocess.run(["ps", "-axo", "pid=,ppid=,comm="], capture_output=True, text=True).stdout
-    return agent_depth(parse_ps(out), os.getpid()) >= 2
+    return parse_ps(out)
+
+
+def nested(table=None):
+    return agent_depth(table if table is not None else process_table(), os.getpid()) >= 2
 
 
 def share_memory(agent, payload, prefs):
@@ -71,9 +87,15 @@ def run(agent, name):
             share_memory(agent, payload, prefs)
         daemon = config.read_daemon()
         event = to_event(agent, name, payload, os.environ, time.time())
-        # An agent run inside another agent's pane (claude -p in a script) shares its tab id.
-        if not daemon or not event or nested():
+        if not daemon or not event:
             return
+        table = process_table()
+        # An agent run inside another agent's pane (claude -p in a script) shares its tab id.
+        if nested(table):
+            return
+        # iTerm2 gives every tab a new id when it restarts, but an agent started before keeps the
+        # old one in ITERM_SESSION_ID. Its process stays, so the service matches on its pid.
+        event["agent_pid"] = agent_pid(table, os.getpid())
         if name == "UserPromptSubmit" and event.get("cwd") and prefs["undo"]:
             event["snapshot"] = snapshot.take(event["cwd"])
         post(daemon, "/api/event", event)

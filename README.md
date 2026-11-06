@@ -167,7 +167,8 @@ These still work and win over the file:
 <summary>Hooks, a local service and a web panel</summary>
 
 1. Claude Code and Codex run `pitwall hook <agent> <event>` on each hook event. The hook reads
-   `ITERM_SESSION_ID` to know its pane, sends the event to the service and exits. It never
+   `ITERM_SESSION_ID` to know its pane and sends the event to the service with its agent's pid, so
+   the service can still find the pane if iTerm2 restarted and renamed it. Then it exits. It never
    blocks or fails the agent, and it prints nothing but the shared memory at session start.
 2. The service holds the agent state, serves the panel on `127.0.0.1`, and acts on iTerm2
    through its Python API: tab colours, keyboard focus, screen reads and keystrokes.

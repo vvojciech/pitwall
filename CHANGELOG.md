@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Cards of agents started before iTerm2 restarted keep updating. iTerm2 gives every tab a new id
+  when it restarts, and those agents still reported the old one.
+
 ## 0.9.1 (2026-10-23)
 
 - Codex credits show next to the Codex limits when you have some.

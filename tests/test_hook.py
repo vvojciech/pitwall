@@ -69,5 +69,36 @@ class SettingsInHookTests(unittest.TestCase):
         self.assertEqual(len(posted), 1)  # the card still gets the event
 
 
+PS_HOOK = """\
+    1     0 /sbin/launchd
+  100     1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  200   100 -zsh
+  300   200 claude
+  400   300 /bin/sh
+  410   400 python3
+"""
+
+
+class AgentPidTests(unittest.TestCase):
+    def test_a_hook_finds_the_agent_process_above_it(self):
+        self.assertEqual(hook.agent_pid(parse_ps(PS_HOOK), 410), 300)
+
+    def test_a_process_with_no_agent_above_it_has_no_agent_pid(self):
+        self.assertIsNone(hook.agent_pid(parse_ps(PS_HOOK), 200))
+        self.assertIsNone(hook.agent_pid({5: (6, "sh"), 6: (5, "sh")}, 5))
+
+    def test_the_hook_sends_its_agent_pid_with_the_event(self):
+        posted = []
+        with mock.patch.object(hook.settings, "current", return_value=prefs()), \
+                mock.patch.object(hook.config, "read_daemon", return_value={"port": 1, "token": "t"}), \
+                mock.patch.object(hook, "process_table", return_value=parse_ps(PS_HOOK)), \
+                mock.patch.object(hook.os, "getpid", return_value=410), \
+                mock.patch.object(hook, "post", side_effect=lambda d, p, e: posted.append(e)), \
+                mock.patch.dict("os.environ", {"ITERM_SESSION_ID": "w0t0p0:OLD"}), \
+                mock.patch("sys.stdin", io.StringIO(json.dumps({"cwd": "/repo"}))):
+            hook.run("claude", "Stop")
+        self.assertEqual([(e["sid"], e["agent_pid"]) for e in posted], [("OLD", 300)])
+
+
 if __name__ == "__main__":
     unittest.main()

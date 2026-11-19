@@ -107,10 +107,10 @@ function miniMeter(label, w) {
     <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
-// Today's share of the headline model, under the Claude row; nothing on a day without it.
+// Today's share of the headline model, under the Claude row; nothing before Claude's first reply of the day.
 function modelRow(models) {
-  const lead = (models || {})[HEADLINE_MODEL], all = tokenSum(models), name = familyName(HEADLINE_MODEL);
-  if (!lead) return "";
+  const lead = (models || {})[HEADLINE_MODEL] || 0, all = tokenSum(models), name = familyName(HEADLINE_MODEL);
+  if (!all) return "";
   return `<div class="urow unote" title="${name}: ${fmt.tokens(lead)} of today's ${fmt.tokens(all)} Claude tokens, cache reads left out">
     <span class="model lead">${name}</span><span class="tval">${shareText(lead, all)} of today's Claude tokens, no cache reads</span></div>`;
 }

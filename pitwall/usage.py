@@ -18,8 +18,12 @@ KEEP_DAYS = 30  # the longest range the activity page shows
 ROWS_VERSION = 2  # bump when summarize() returns new fields, so cached rows are read again
 
 
+SUBAGENTS = ".claude/projects/*/*/subagents/*.jsonl"
+
+
 def _files(home, since):
-    for agent, pattern in (("claude", ".claude/projects/*/*.jsonl"), ("codex", ".codex/sessions/*/*/*/*.jsonl")):
+    for agent, pattern in (("claude", ".claude/projects/*/*.jsonl"), ("claude", SUBAGENTS),
+                           ("codex", ".codex/sessions/*/*/*/*.jsonl")):
         for path in home.glob(pattern):
             try:
                 stat = path.stat()
@@ -27,6 +31,12 @@ def _files(home, since):
                 continue
             if stat.st_mtime >= since:
                 yield agent, path, stat
+
+
+def _subagent(rows):
+    """A subagent's tokens count against the plan, so they join the model split. The other totals
+    stay main sessions only, as they always were."""
+    return [dict(r, active=0, prompts=0, tokens=0, files=0, commands=0) for r in rows]
 
 
 def activity(home, days=7):
@@ -44,7 +54,10 @@ def activity(home, days=7):
         entry = cache.get(key)
         if not entry or entry["stamp"] != stamp or entry.get("version") != ROWS_VERSION:
             with open(path, errors="replace") as f:
-                entry = cache[key] = {"stamp": stamp, "version": ROWS_VERSION, "rows": summarize(f, agent)}
+                found = summarize(f, agent)
+            if path.match(SUBAGENTS):
+                found = _subagent(found)
+            entry = cache[key] = {"stamp": stamp, "version": ROWS_VERSION, "rows": found}
             changed = True
         rows += [r for r in entry["rows"] if r["day"] >= first]
     if changed:

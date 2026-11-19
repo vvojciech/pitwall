@@ -83,6 +83,15 @@ class ActivityCacheTests(unittest.TestCase):
         self.assertEqual(today["tokens"], 400)
         self.assertEqual(today["models"], {"opus": 300, "fable": 100})
 
+    def test_subagents_count_toward_the_model_split_only(self):
+        # Their tokens count against the plan; their time and prompts are the main session's.
+        subagent = self.transcript.parent / "s/subagents/agent-a.jsonl"
+        subagent.parent.mkdir(parents=True)
+        subagent.write_text(reply("claude-sonnet-5-5", 600) + "\n")
+        today = usage.report(self.home, days=1)["today"]
+        self.assertEqual(today["models"], {"opus": 300, "fable": 100, "sonnet": 600})
+        self.assertEqual(today["tokens"], 400)
+
     def test_a_cache_entry_from_before_the_model_split_is_read_again(self):
         stat = self.transcript.stat()
         old_rows = [{"day": time.strftime("%Y-%m-%d"), "project": "shop", "agent": "claude", "active": 0,

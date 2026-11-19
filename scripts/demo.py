@@ -78,7 +78,7 @@ def activity(days):
         day = time.strftime("%Y-%m-%d", time.localtime(NOW - i * 86400))
         for project, agent, hours in (("acme-shop", "claude", 3.1), ("billing-api", "codex", 1.4), ("docs-site", "claude", 0.8)):
             h = hours * (1 + 0.45 * ((i * 7 + len(project)) % 5 - 2) / 2)
-            tokens, fable = int(h * 4.2e6), 0.05 * (i % 4) if agent == "claude" else 0
+            tokens, fable = int(h * 4.2e6), 0.05 * (i % 4 + 1) if agent == "claude" else 0
             models = {"opus": int(tokens * (0.9 - fable)), "fable": int(tokens * fable), "haiku": int(tokens * 0.1)} if agent == "claude" else {}
             rows.append({"day": day, "project": project, "agent": agent, "active": int(h * 3600), "prompts": int(h * 9),
                          "tokens": tokens, "models": {k: v for k, v in models.items() if v}, "files": int(h * 6), "commands": int(h * 40)})

@@ -108,14 +108,14 @@ function modelsCard(rows) {
   const shares = modelsCard.per.map((p) => (tokenSum(p.models) ? (p.models[HEADLINE_MODEL] || 0) / tokenSum(p.models) : 0));
   const top = Math.max(...shares);
   const axis = [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1].find((t) => t >= top);  // a round top, so bar heights compare
-  const label = (day, i) => days <= 7 ? new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "narrow" })
+  const label = (day, i) => days <= 7 ? new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "short" })
     : days <= 14 || (shares.length - 1 - i) % 5 === 0 ? String(Number(day.slice(8))) : "";
-  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}">${v && (days <= 7 || v === top) ? `<b>${shareText(v, 1)}</b>` : ""}<span class="lead" style="height:${
-    v ? Math.max(2, (100 * v) / axis) : 0}%"></span><em>${label(modelsCard.per[i].day, i)}</em></div>`).join("");
+  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}"><span class="lead" style="height:${
+    v ? Math.max(2, (100 * v) / axis) : 0}%">${v && (days <= 7 || v === top) ? `<b>${shareText(v, 1)}</b>` : ""}</span><em>${label(modelsCard.per[i].day, i)}</em></div>`).join("");
   const perDay = top
     ? `<div class="mdays-head"><span>${name} share per day</span></div><div class="mdays"><i class="mtop">${shareText(axis, 1)}</i>${cols}</div>`
     : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
-  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2><span class="note">Share of tokens, cache reads left out</span></div>
+  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2><span class="note">Tokens, no cache reads</span></div>
     <div class="mix">${list}</div>${perDay}</section>`;
 }
 

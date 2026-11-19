@@ -151,7 +151,7 @@ const longDate = (day) => new Date(day + "T12:00").toLocaleDateString("en-GB", {
 function modelTip(p) {
   const all = tokenSum(p.models);
   if (!all) return `<b>${longDate(p.day)}</b><span>No Claude tokens</span>`;
-  const list = Object.entries(p.models).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
+  const list = Object.entries(addModels({ [HEADLINE_MODEL]: 0 }, p.models)).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
   return `<b>${longDate(p.day)}</b>${list.map(([f, n]) => `<span><i class="model-dot ${f === HEADLINE_MODEL ? "lead" : "rest"}"></i>${esc(familyName(f))}<em>${shareText(n, all)} · ${fmt.tokens(n)}</em></span>`).join("")}
     <span class="sum">Total<em>${fmt.tokens(all)}</em></span>`;
 }

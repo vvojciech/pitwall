@@ -86,12 +86,11 @@ def _claude(records, days):
         if message.get("id") not in seen:  # one message can be written as several records
             seen.add(message.get("id"))
             u = message.get("usage") or {}
-            tokens = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
-                                                 "cache_read_input_tokens", "output_tokens"))
-            row["tokens"] += tokens
-            if tokens:
+            fresh = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "output_tokens"))
+            row["tokens"] += fresh + (u.get("cache_read_input_tokens") or 0)
+            if fresh:
                 family = model_family(message.get("model"))
-                row["models"][family] = row["models"].get(family, 0) + tokens
+                row["models"][family] = row["models"].get(family, 0) + fresh
         for b in content if isinstance(content, list) else []:
             if isinstance(b, dict) and b.get("type") == "tool_use":
                 if b.get("name") == "Bash":
@@ -128,7 +127,9 @@ def _codex(records, days):
 def summarize(lines, agent):
     """Rows of {day, project, agent, active, prompts, tokens, models, files, commands} for one transcript.
 
-    `models` splits the tokens by model family; Codex does not record a model with its counts, so it is empty.
+    `models` splits the tokens by model family, cache reads left out: they are most of the tokens of a long
+    session and cost a tenth of the others, so with them the model a session started on swamps the split.
+    Codex does not record a model with its counts, so its split is empty.
     """
     records = []
     for line in lines:

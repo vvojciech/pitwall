@@ -238,7 +238,8 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 
 /* Claude models: the headline model in its colour, the rest in grey */
 .model { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-size: 11px; }
-.model::before, .model-dot { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--faint); display: inline-block; }
+.model::before { content: ""; }
+.model::before, .model-dot { width: 6px; height: 6px; border-radius: 2px; background: var(--faint); display: inline-block; }
 .model.lead::before, .model-dot.lead, .share.lead, .mday .lead { background: var(--lead-model); }
 .side { display: grid; gap: 16px; min-width: 0; }
 .mix { display: grid; gap: 7px; }

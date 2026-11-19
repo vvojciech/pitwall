@@ -3,9 +3,10 @@
 ## Unreleased
 
 - The activity page splits Claude's tokens by model family (Opus, Fable, Sonnet, Haiku) and shows
-  Fable's share for the range and per day. Cache reads are left out of the split: they
-  are most of a long session's tokens, so with them the model a session started on drowns out the rest. The panel shows Fable's share of today's tokens when
-  you used it. Plan limits stay one figure: Claude Code doesn't report a limit per model.
+  Fable's share for the range and per day. The panel shows Fable's share of today's tokens when
+  you used it. Cache reads are left out of the split: they are most of a long session's tokens,
+  so with them the model a session started on drowns out the rest. Plan limits stay one figure:
+  Claude Code doesn't report a limit per model.
 
 ## 0.9.2 (2026-11-06)
 

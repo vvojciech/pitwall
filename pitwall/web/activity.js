@@ -44,7 +44,7 @@ function leadTile(rows) {
   const models = addModels({}, ...rows.map((r) => r.models)), lead = models[HEADLINE_MODEL];
   if (!lead) return "";
   return `<div class="tile" title="${fmt.tokens(lead)} of ${fmt.tokens(tokenSum(models))} Claude tokens, cache reads left out"><span><i class="model-dot lead"></i>${familyName(HEADLINE_MODEL)}</span><b>${shareText(lead, tokenSum(models))}</b>
-    <small>of Claude tokens</small></div>`;
+    <small>of Claude, no cache reads</small></div>`;
 }
 
 function chart(rows) {
@@ -107,10 +107,13 @@ function modelsCard(rows) {
   modelsCard.per = dayList().map((day) => ({ day, models: addModels({}, ...rows.filter((r) => r.day === day).map((r) => r.models)) }));
   const shares = modelsCard.per.map((p) => (tokenSum(p.models) ? (p.models[HEADLINE_MODEL] || 0) / tokenSum(p.models) : 0));
   const top = Math.max(...shares);
-  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}">${days <= 7 && v ? `<b>${shareText(v, 1)}</b>` : ""}<span class="lead" style="height:${v ? Math.max(2, (100 * v) / top) : 0}%"></span>${
-    days <= 7 ? `<em>${new Date(modelsCard.per[i].day + "T12:00").toLocaleDateString("en-GB", { weekday: "narrow" })}</em>` : ""}</div>`).join("");
+  const axis = [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1].find((t) => t >= top);  // a round top, so bar heights compare
+  const label = (day, i) => days <= 7 ? new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "narrow" })
+    : days <= 14 || (shares.length - 1 - i) % 5 === 0 ? String(Number(day.slice(8))) : "";
+  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}">${v && (days <= 7 || v === top) ? `<b>${shareText(v, 1)}</b>` : ""}<span class="lead" style="height:${
+    v ? Math.max(2, (100 * v) / axis) : 0}%"></span><em>${label(modelsCard.per[i].day, i)}</em></div>`).join("");
   const perDay = top
-    ? `<div class="mdays-head"><span>${name} share per day</span><span>top ${shareText(top, 1)}</span></div><div class="mdays">${cols}</div>`
+    ? `<div class="mdays-head"><span>${name} share per day</span></div><div class="mdays"><i class="mtop">${shareText(axis, 1)}</i>${cols}</div>`
     : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
   return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2><span class="note">Share of tokens, cache reads left out</span></div>
     <div class="mix">${list}</div>${perDay}</section>`;
@@ -150,7 +153,7 @@ function modelTip(p) {
   if (!all) return `<b>${longDate(p.day)}</b><span>No Claude tokens</span>`;
   const list = Object.entries(p.models).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
   return `<b>${longDate(p.day)}</b>${list.map(([f, n]) => `<span><i class="model-dot ${f === HEADLINE_MODEL ? "lead" : "rest"}"></i>${esc(familyName(f))}<em>${shareText(n, all)} · ${fmt.tokens(n)}</em></span>`).join("")}
-    <span class="sum">Claude tokens<em>${fmt.tokens(all)}</em></span>`;
+    <span class="sum">Claude, no cache reads<em>${fmt.tokens(all)}</em></span>`;
 }
 
 page.addEventListener("mousemove", (e) => {

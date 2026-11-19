@@ -246,15 +246,14 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 .mix-row .meter span { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: var(--faint); }
 .mix-row .meter, .mix-row .mval { grid-area: auto; }
 .mtok { color: var(--faint); font: 10.5px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
-.mdays-head { display: flex; justify-content: space-between; margin: 14px 0 6px; color: var(--muted); font-size: 11px; }
-.mdays-head span:last-child { color: var(--faint); font-size: 10.5px; }
-.mdays { display: flex; align-items: stretch; gap: 2px; height: 76px; border-bottom: 1px solid var(--line); }
+.mdays-head { margin-top: 14px; color: var(--muted); font-size: 11px; }
+.mdays { position: relative; display: flex; align-items: stretch; gap: 2px; height: 76px; margin: 16px 0 18px 30px; border-bottom: 1px solid var(--line); border-top: 1px dashed var(--line); }
+.mtop { position: absolute; left: -30px; top: -7px; font: normal 10px var(--mono); color: var(--faint); }
 .mday { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
-.mday b { font: 500 10px var(--mono); color: var(--muted); margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+.mday b { font: 500 10px var(--mono); color: var(--muted); margin-bottom: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mday:hover { background: var(--line); }
 .mday span { width: min(100%, 22px); border-radius: 3px 3px 0 0; }
 .mday em { position: absolute; bottom: -16px; font-style: normal; color: var(--faint); font-size: 10px; }
-.mdays:has(em) { margin-bottom: 18px; }
 
 /* Activity page */
 body.activity-page { font-size: 13px; }

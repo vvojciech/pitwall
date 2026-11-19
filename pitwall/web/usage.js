@@ -111,7 +111,7 @@ function miniMeter(label, w) {
 function modelRow(models) {
   const lead = (models || {})[HEADLINE_MODEL] || 0, all = tokenSum(models), name = familyName(HEADLINE_MODEL);
   if (!all) return "";
-  return `<div class="urow unote" title="${name}: ${fmt.tokens(lead)} of today's ${fmt.tokens(all)} Claude tokens, cache reads left out">
+  return `<div class="urow unote" title="${name}: ${fmt.tokens(lead)} of today's ${fmt.tokens(all)} Claude tokens, subagents included, cache reads left out">
     <span class="model lead">${name}</span><span class="tval">${shareText(lead, all)} of today's Claude tokens, no cache reads</span></div>`;
 }
 

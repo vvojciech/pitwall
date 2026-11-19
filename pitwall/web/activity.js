@@ -43,7 +43,7 @@ function tiles(rows) {
 function leadTile(rows) {
   const models = addModels({}, ...rows.map((r) => r.models)), lead = models[HEADLINE_MODEL] || 0;
   if (!tokenSum(models)) return "";
-  return `<div class="tile" title="${fmt.tokens(lead)} of ${fmt.tokens(tokenSum(models))} Claude tokens, cache reads left out"><span><i class="model-dot lead"></i>${familyName(HEADLINE_MODEL)}</span><b>${shareText(lead, tokenSum(models))}</b>
+  return `<div class="tile" title="${fmt.tokens(lead)} of ${fmt.tokens(tokenSum(models))} Claude tokens, subagents included, cache reads left out"><span><i class="model-dot lead"></i>${familyName(HEADLINE_MODEL)}</span><b>${shareText(lead, tokenSum(models))}</b>
     <small>of Claude, no cache reads</small></div>`;
 }
 
@@ -115,8 +115,8 @@ function modelsCard(rows) {
   const perDay = top
     ? `<div class="mdays-head"><span>${name} share per day</span></div><div class="mdays"><i class="mtop">${shareText(axis, 1)}</i>${cols}</div>`
     : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
-  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2><span class="note">Tokens, no cache reads</span></div>
-    <div class="mix">${list}</div>${perDay}</section>`;
+  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2></div>
+    <div class="mix">${list}</div><p class="mnote mfoot">Sessions and subagents, cache reads left out</p>${perDay}</section>`;
 }
 
 function projects(rows) {
@@ -153,7 +153,7 @@ function modelTip(p) {
   if (!all) return `<b>${longDate(p.day)}</b><span>No Claude tokens</span>`;
   const list = Object.entries(p.models).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
   return `<b>${longDate(p.day)}</b>${list.map(([f, n]) => `<span><i class="model-dot ${f === HEADLINE_MODEL ? "lead" : "rest"}"></i>${esc(familyName(f))}<em>${shareText(n, all)} · ${fmt.tokens(n)}</em></span>`).join("")}
-    <span class="sum">Claude, no cache reads<em>${fmt.tokens(all)}</em></span>`;
+    <span class="sum">Total<em>${fmt.tokens(all)}</em></span>`;
 }
 
 page.addEventListener("mousemove", (e) => {

@@ -25,6 +25,28 @@ const fmt = {
   },
 };
 
+// Claude's tokens per model family. The panel leads with this one; the others are listed beside it.
+const HEADLINE_MODEL = "fable";
+const familyName = (f) => f.charAt(0).toUpperCase() + f.slice(1);
+
+// Adds each {family: tokens} to `into`. An older service sends no split: nothing is added.
+function addModels(into, ...splits) {
+  splits.forEach((m) => Object.entries(m || {}).forEach(([f, n]) => { into[f] = (into[f] || 0) + n; }));
+  return into;
+}
+
+// A share that never rounds a little to 0% or a lot short of everything to 100%.
+function shareText(part, whole) {
+  if (!whole) return "–";
+  const p = (100 * part) / whole;
+  if (p === 0 || p === 100) return `${p}%`;
+  if (p < 0.1) return "<0.1%";
+  if (p > 99.9) return ">99.9%";
+  return p < 10 || p > 90 ? `${p.toFixed(1)}%` : `${Math.round(p)}%`;
+}
+
+const tokenSum = (models) => Object.values(models || {}).reduce((n, v) => n + v, 0);
+
 // How much of the limit's window has passed, in percent; null without a reset time.
 function passed(w) {
   if (!w.resets_at || !w.window) return null;
@@ -85,6 +107,14 @@ function miniMeter(label, w) {
     <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
+// Today's share of the headline model, under the Claude row; nothing on a day without it.
+function modelRow(models) {
+  const lead = (models || {})[HEADLINE_MODEL], all = tokenSum(models), name = familyName(HEADLINE_MODEL);
+  if (!lead) return "";
+  return `<div class="urow unote" title="${name}: ${fmt.tokens(lead)} of today's ${fmt.tokens(all)} Claude tokens, cache reads left out">
+    <span class="model lead">${name}</span><span class="tval">${shareText(lead, all)} of today's Claude tokens</span></div>`;
+}
+
 function usageBar() {
   const u = ui.usage;
   if (!u) return "";
@@ -92,7 +122,8 @@ function usageBar() {
     const l = u.limits[agent];
     const extra = creditsText(l);
     return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
-      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}`;
+      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}${
+      agent === "claude" ? modelRow(u.today.models) : ""}`;
   };
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";

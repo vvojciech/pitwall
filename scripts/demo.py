@@ -14,6 +14,7 @@ sys.path.insert(0, ROOT)
 from pitwall.codemap import build  # noqa: E402
 from pitwall.schedules import view  # noqa: E402
 from pitwall.settings import DEFAULTS, FEATURES  # noqa: E402
+from pitwall.usage import models_total  # noqa: E402
 
 WEB = os.path.join(ROOT, "pitwall", "web")
 NOW = time.time()
@@ -77,15 +78,18 @@ def activity(days):
         day = time.strftime("%Y-%m-%d", time.localtime(NOW - i * 86400))
         for project, agent, hours in (("acme-shop", "claude", 3.1), ("billing-api", "codex", 1.4), ("docs-site", "claude", 0.8)):
             h = hours * (1 + 0.45 * ((i * 7 + len(project)) % 5 - 2) / 2)
+            tokens, fable = int(h * 4.2e6), 0.05 * (i % 4) if agent == "claude" else 0
+            models = {"opus": int(tokens * (0.9 - fable)), "fable": int(tokens * fable), "haiku": int(tokens * 0.1)} if agent == "claude" else {}
             rows.append({"day": day, "project": project, "agent": agent, "active": int(h * 3600), "prompts": int(h * 9),
-                         "tokens": int(h * 4.2e6), "files": int(h * 6), "commands": int(h * 40)})
+                         "tokens": tokens, "models": {k: v for k, v in models.items() if v}, "files": int(h * 6), "commands": int(h * 40)})
     H5, WK = 5 * 3600, 7 * 86400
     limits = {"claude": {"five_hour": {"used": 64, "resets_at": NOW + 5400, "window": H5}, "week": {"used": 38, "resets_at": NOW + 300000, "window": WK}, "windows_left": 18},
               "codex": {"five_hour": {"used": 22, "resets_at": NOW + 9000, "window": H5}, "week": {"used": 81, "resets_at": NOW + 200000, "window": WK},
                         "credits": {"has_credits": True, "unlimited": False, "balance": "40"}, "windows_left": 40}}
     today = [r for r in rows if r["day"] == time.strftime("%Y-%m-%d")]
     return {"days": days, "rows": rows, "limits": limits,
-            "today": {k: sum(r[k] for r in today) for k in ("active", "prompts", "tokens", "files", "commands")}}
+            "today": dict({k: sum(r[k] for r in today) for k in ("active", "prompts", "tokens", "files", "commands")},
+                          models=models_total(today))}
 
 
 def code_map(mode):

@@ -1,5 +1,5 @@
 "use strict";
-// The activity page: totals, agent time per day (stacked by agent), plan limits, projects.
+// The activity page: totals, agent time per day (stacked by agent), plan limits, Claude models, projects.
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const AGENTS = [["claude", "Claude"], ["codex", "Codex"]];  // fixed order: stack order and legend order
@@ -36,7 +36,15 @@ function tiles(rows) {
     ${tile("Prompts", fmt.count(sum(rows, "prompts")))}
     ${tile("Files edited", fmt.count(sum(rows, "files")))}
     ${tile("Commands", fmt.count(sum(rows, "commands")))}
-    ${tile("Tokens", fmt.tokens(sum(rows, "tokens")), "cache reads included")}</section>`;
+    ${tile("Tokens", fmt.tokens(sum(rows, "tokens")), "cache reads included")}${leadTile(rows)}</section>`;
+}
+
+// The headline model's share of Claude's tokens in the range; no tile when it was not used.
+function leadTile(rows) {
+  const models = addModels({}, ...rows.map((r) => r.models)), lead = models[HEADLINE_MODEL];
+  if (!lead) return "";
+  return `<div class="tile" title="${fmt.tokens(lead)} of ${fmt.tokens(tokenSum(models))} Claude tokens, cache reads left out"><span><i class="model-dot lead"></i>${familyName(HEADLINE_MODEL)}</span><b>${shareText(lead, tokenSum(models))}</b>
+    <small>of Claude tokens</small></div>`;
 }
 
 function chart(rows) {
@@ -87,6 +95,27 @@ function limitsCard() {
     <div class="usage-card wide">${shown().map(([a]) => limitsBlock(a, l[a])).join("")}</div></section>`;
 }
 
+// Claude's tokens per model family over the range, then the headline model's share per day.
+function modelsCard(rows) {
+  const models = addModels({}, ...rows.map((r) => r.models)), all = tokenSum(models);
+  if (!all) return "";
+  const name = familyName(HEADLINE_MODEL);
+  const list = Object.entries(models).sort((a, b) => b[1] - a[1]).map(([f, n]) => `<div class="mix-row">
+    <span class="model ${f === HEADLINE_MODEL ? "lead" : "rest"}">${esc(familyName(f))}</span>
+    <div class="meter"><span class="share ${f === HEADLINE_MODEL ? "lead" : "rest"}" style="width:${Math.max(1, (100 * n) / all)}%"></span></div>
+    <span class="mval">${shareText(n, all)}</span><span class="mtok">${fmt.tokens(n)}</span></div>`).join("");
+  modelsCard.per = dayList().map((day) => ({ day, models: addModels({}, ...rows.filter((r) => r.day === day).map((r) => r.models)) }));
+  const shares = modelsCard.per.map((p) => (tokenSum(p.models) ? (p.models[HEADLINE_MODEL] || 0) / tokenSum(p.models) : 0));
+  const top = Math.max(...shares);
+  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}">${days <= 7 && v ? `<b>${shareText(v, 1)}</b>` : ""}<span class="lead" style="height:${v ? Math.max(2, (100 * v) / top) : 0}%"></span>${
+    days <= 7 ? `<em>${new Date(modelsCard.per[i].day + "T12:00").toLocaleDateString("en-GB", { weekday: "narrow" })}</em>` : ""}</div>`).join("");
+  const perDay = top
+    ? `<div class="mdays-head"><span>${name} share per day</span><span>top ${shareText(top, 1)}</span></div><div class="mdays">${cols}</div>`
+    : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
+  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2><span class="note">Share of tokens, cache reads left out</span></div>
+    <div class="mix">${list}</div>${perDay}</section>`;
+}
+
 function projects(rows) {
   const by = {};
   rows.forEach((r) => {
@@ -107,19 +136,33 @@ function projects(rows) {
 function render() {
   const rows = data.rows;
   page.innerHTML = rows.length
-    ? tiles(rows) + `<div class="two"><section class="panel-card chart-box"></section>${limitsCard()}</div>` + projects(rows)
+    ? tiles(rows) + `<div class="two"><section class="panel-card chart-box"></section><div class="side">${limitsCard()}${modelsCard(rows)}</div></div>` + projects(rows)
     : `<div class="empty-state"><strong>No agent activity</strong>Nothing in the last ${days} days.</div>` + limitsCard();
   const box = document.querySelector(".chart-box");
   if (box) box.innerHTML = chart(rows);  // drawn after layout, at the card's real width
 }
 
+const longDate = (day) => new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+
+// A day's Claude tokens per model family, the headline model first.
+function modelTip(p) {
+  const all = tokenSum(p.models);
+  if (!all) return `<b>${longDate(p.day)}</b><span>No Claude tokens</span>`;
+  const list = Object.entries(p.models).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
+  return `<b>${longDate(p.day)}</b>${list.map(([f, n]) => `<span><i class="model-dot ${f === HEADLINE_MODEL ? "lead" : "rest"}"></i>${esc(familyName(f))}<em>${shareText(n, all)} · ${fmt.tokens(n)}</em></span>`).join("")}
+    <span class="sum">Claude tokens<em>${fmt.tokens(all)}</em></span>`;
+}
+
 page.addEventListener("mousemove", (e) => {
-  const hit = e.target.closest(".hit");
+  const hit = e.target.closest(".hit, .mday");
   if (!hit) { tip.classList.remove("show"); return; }
-  const p = chart.per[Number(hit.dataset.i)];
-  const date = new Date(p.day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-  tip.innerHTML = `<b>${date}</b>${shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
+  if (hit.classList.contains("mday")) {
+    tip.innerHTML = modelTip(modelsCard.per[Number(hit.dataset.i)]);
+  } else {
+    const p = chart.per[Number(hit.dataset.i)];
+    tip.innerHTML = `<b>${longDate(p.day)}</b>${shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
     <span class="sum">Total<em>${fmt.duration(p.total * 3600)}</em></span>`;
+  }
   tip.style.left = `${Math.min(e.clientX + 14, innerWidth - 190)}px`;
   tip.style.top = `${e.clientY + 14}px`;
   tip.classList.add("show");

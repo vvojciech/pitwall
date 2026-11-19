@@ -15,6 +15,7 @@ CACHE = config.HOME / "activity-cache.json"
 LIMITS_SEEN = config.HOME / "limits-seen.json"
 TAIL_BYTES = 400_000  # Codex limits are near the end of its newest transcript
 KEEP_DAYS = 30  # the longest range the activity page shows
+ROWS_VERSION = 2  # bump when summarize() returns new fields, so cached rows are read again
 
 
 def _files(home, since):
@@ -41,9 +42,9 @@ def activity(home, days=7):
     for agent, path, stat in _files(home, time.time() - days * 86400):
         key, stamp = str(path), [stat.st_mtime, stat.st_size]
         entry = cache.get(key)
-        if not entry or entry["stamp"] != stamp:
+        if not entry or entry["stamp"] != stamp or entry.get("version") != ROWS_VERSION:
             with open(path, errors="replace") as f:
-                entry = cache[key] = {"stamp": stamp, "rows": summarize(f, agent)}
+                entry = cache[key] = {"stamp": stamp, "version": ROWS_VERSION, "rows": summarize(f, agent)}
             changed = True
         rows += [r for r in entry["rows"] if r["day"] >= first]
     if changed:
@@ -137,13 +138,23 @@ def installed(home):
     return [a for a in ("claude", "codex") if (home / f".{a}").is_dir()]
 
 
+def models_total(rows):
+    """Tokens per model family across rows."""
+    out = {}
+    for r in rows:
+        for family, tokens in r["models"].items():
+            out[family] = out.get(family, 0) + tokens
+    return out
+
+
 def report(home, days=7):
     rows = activity(home, days)
     today = date.today().isoformat()
     total = lambda key, rs: sum(r[key] for r in rs)
     today_rows = [r for r in rows if r["day"] == today]
+    totals = {k: total(k, today_rows) for k in ("active", "prompts", "tokens", "files", "commands")}
     return {"days": days, "rows": rows, "limits": limits(home), "agents": installed(home),
-            "today": {k: total(k, today_rows) for k in ("active", "prompts", "tokens", "files", "commands")}}
+            "today": dict(totals, models=models_total(today_rows))}
 
 
 if __name__ == "__main__":

@@ -1,5 +1,12 @@
+import json
+import tempfile
+import time
 import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+from unittest import mock
 
+from pitwall import usage
 from pitwall.usage import claude_limits, windows_left
 
 NOW = 1_791_760_000
@@ -48,6 +55,49 @@ class WindowsLeftTests(unittest.TestCase):
     def test_a_missing_window_gives_none(self):
         self.assertIsNone(windows_left({"five_hour": None, "week": {"resets_at": NOW}}))
         self.assertIsNone(windows_left(None))
+
+
+def reply(model, tokens):
+    now = datetime.now(timezone.utc).isoformat()
+    return json.dumps({"type": "assistant", "timestamp": now, "cwd": "/w/shop",
+                       "message": {"id": model, "model": model, "usage": {"output_tokens": tokens}}})
+
+
+class ActivityCacheTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.home = Path(tmp.name)
+        self.cache = self.home / "activity-cache.json"
+        for target, name, value in ((usage, "CACHE", self.cache), (usage, "LIMITS_SEEN", self.home / "seen.json"),
+                                    (usage.config, "HOME", self.home)):  # never the real ~/.pitwall
+            patcher = mock.patch.object(target, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.transcript = self.home / ".claude/projects/-w-shop/s.jsonl"
+        self.transcript.parent.mkdir(parents=True)
+        self.transcript.write_text(reply("claude-opus-5-5", 300) + "\n" + reply("claude-fable-5-1", 100) + "\n")
+
+    def test_today_splits_the_tokens_by_model_family(self):
+        today = usage.report(self.home, days=1)["today"]
+        self.assertEqual(today["tokens"], 400)
+        self.assertEqual(today["models"], {"opus": 300, "fable": 100})
+
+    def test_a_cache_entry_from_before_the_model_split_is_read_again(self):
+        stat = self.transcript.stat()
+        old_rows = [{"day": time.strftime("%Y-%m-%d"), "project": "shop", "agent": "claude", "active": 0,
+                     "prompts": 0, "tokens": 400, "files": 0, "commands": 0}]
+        self.cache.write_text(json.dumps({str(self.transcript): {"stamp": [stat.st_mtime, stat.st_size], "rows": old_rows}}))
+        (row,) = usage.activity(self.home, days=1)
+        self.assertEqual(row["models"], {"opus": 300, "fable": 100})
+        self.assertEqual(usage.report(self.home, days=1)["today"]["models"], {"opus": 300, "fable": 100})
+
+    def test_an_unchanged_transcript_comes_from_the_cache(self):
+        usage.activity(self.home, days=1)
+        with mock.patch.object(usage, "summarize") as summarize:
+            (row,) = usage.activity(self.home, days=1)
+        summarize.assert_not_called()
+        self.assertEqual(row["models"], {"opus": 300, "fable": 100})
 
 
 if __name__ == "__main__":

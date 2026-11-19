@@ -15,6 +15,7 @@ from pitwall.events import prompt_text
 IDLE_GAP = 300  # seconds; a longer pause between two records is not active time
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 PATCH_FILE = re.compile(r"\*\*\* (?:Update|Add|Delete) File: (.+)")
+MODEL_FAMILY = re.compile(r"claude-(?:[\d.]+-)*([a-z]+)")
 
 
 def _when(ts):
@@ -24,6 +25,12 @@ def _when(ts):
     except (AttributeError, ValueError):
         return None
     return t.timestamp(), t.astimezone().date().isoformat()
+
+
+def model_family(model):
+    """The family in a Claude model id (claude-fable-5-1 is fable); an id without one is other."""
+    found = MODEL_FAMILY.search(model or "")
+    return found.group(1) if found else "other"
 
 
 def project_of(cwd):
@@ -40,7 +47,7 @@ class _Days:
         key = (day, project)
         if key not in self.rows:
             self.rows[key] = {"day": day, "project": project, "agent": self.agent, "active": 0, "prompts": 0,
-                              "tokens": 0, "files": set(), "commands": 0}
+                              "tokens": 0, "models": {}, "files": set(), "commands": 0}
         return self.rows[key]
 
     def tick(self, when, project):
@@ -79,8 +86,12 @@ def _claude(records, days):
         if message.get("id") not in seen:  # one message can be written as several records
             seen.add(message.get("id"))
             u = message.get("usage") or {}
-            row["tokens"] += sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
-                                                        "cache_read_input_tokens", "output_tokens"))
+            tokens = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
+                                                 "cache_read_input_tokens", "output_tokens"))
+            row["tokens"] += tokens
+            if tokens:
+                family = model_family(message.get("model"))
+                row["models"][family] = row["models"].get(family, 0) + tokens
         for b in content if isinstance(content, list) else []:
             if isinstance(b, dict) and b.get("type") == "tool_use":
                 if b.get("name") == "Bash":
@@ -115,7 +126,10 @@ def _codex(records, days):
 
 
 def summarize(lines, agent):
-    """Rows of {day, project, agent, active, prompts, tokens, files, commands} for one transcript."""
+    """Rows of {day, project, agent, active, prompts, tokens, models, files, commands} for one transcript.
+
+    `models` splits the tokens by model family; Codex does not record a model with its counts, so it is empty.
+    """
     records = []
     for line in lines:
         try:

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 (2026-11-20)
 
 - The activity page splits Claude's tokens by model family (Opus, Fable, Sonnet, Haiku) and shows
   Fable's share for the range and per day. On the panel, hover the limits to unfold today's split, same bars.

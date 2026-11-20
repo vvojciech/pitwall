@@ -36,17 +36,10 @@ function tiles(rows) {
     ${tile("Prompts", fmt.count(sum(rows, "prompts")))}
     ${tile("Files edited", fmt.count(sum(rows, "files")))}
     ${tile("Commands", fmt.count(sum(rows, "commands")))}
-    ${tile("Tokens", fmt.tokens(sum(rows, "tokens")), "cache reads included")}${leadTile(rows)}</section>`;
+    ${tile("Tokens", fmt.tokens(sum(rows, "tokens")), "cache reads included")}</section>`;
 }
 
 // The headline model's share of Claude's tokens in the range; no tile without a model split.
-function leadTile(rows) {
-  const models = addModels({}, ...rows.map((r) => r.models)), lead = models[HEADLINE_MODEL] || 0;
-  if (!tokenSum(models)) return "";
-  return `<div class="tile" title="${fmt.tokens(lead)} of ${fmt.tokens(tokenSum(models))} Claude tokens, subagents included, cache reads left out"><span><i class="model-dot lead"></i>${familyName(HEADLINE_MODEL)}</span><b>${shareText(lead, tokenSum(models))}</b>
-    <small>of Claude, no cache reads</small></div>`;
-}
-
 function chart(rows) {
   const list = dayList();
   const per = list.map((day) => {

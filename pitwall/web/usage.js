@@ -107,12 +107,13 @@ function miniMeter(label, w) {
     <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
-// Today's share of the headline model, under the Claude row; nothing before Claude's first reply of the day.
-function modelRow(models) {
-  const lead = (models || {})[HEADLINE_MODEL] || 0, all = tokenSum(models), name = familyName(HEADLINE_MODEL);
+// Today's Claude tokens per model family, for the hover on the Claude row: kept out of the panel itself.
+function modelsTip(models) {
+  const all = tokenSum(models);
   if (!all) return "";
-  return `<div class="urow unote" title="${name}: ${fmt.tokens(lead)} of today's ${fmt.tokens(all)} Claude tokens, subagents included, cache reads left out">
-    <span class="model lead">${name}</span><span class="tval">${shareText(lead, all)} of today's Claude tokens, no cache reads</span></div>`;
+  const rows = Object.entries(models).sort((a, b) => b[1] - a[1])
+    .map(([f, n]) => `${familyName(f)}  ${shareText(n, all)} · ${fmt.tokens(n)}`);
+  return `Claude today, by model (no cache reads)\n${rows.join("\n")}`;
 }
 
 function usageBar() {
@@ -121,9 +122,9 @@ function usageBar() {
   const row = (agent, name) => {
     const l = u.limits[agent];
     const extra = creditsText(l);
-    return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
-      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}${
-      agent === "claude" ? modelRow(u.today.models) : ""}`;
+    const tip = agent === "claude" ? modelsTip(u.today.models) : "";
+    return `<div class="urow"${tip ? ` title="${esc(tip)}"` : ""}><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
+      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}`;
   };
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";

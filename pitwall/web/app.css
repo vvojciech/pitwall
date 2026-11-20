@@ -351,6 +351,11 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 /* Usage strip, pinned to the bottom of the panel */
 .usage-bar { position: sticky; bottom: 0; z-index: 2; background: var(--bg); border-top: 1px solid var(--line); padding: 7px 12px 8px; display: grid; gap: 4px; font-size: 11px; }
 .usage-bar:empty { display: none; }
+/* Hover or focus the limits to unfold today's Claude model split, the same bars as the activity page */
+.models-peek { display: grid; gap: 6px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .18s ease, opacity .15s ease, margin .18s ease; }
+.usage-bar:hover .models-peek, .usage-bar:focus-within .models-peek { max-height: 160px; opacity: 1; margin: 6px 0 4px; }
+.models-peek .mfoot { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .models-peek { transition: none; } }
 .urow { display: grid; grid-template-columns: 52px 1fr 1fr; align-items: center; gap: 10px; min-width: 0; }
 .urow .agent { color: var(--ink); font-size: 11px; }
 .mm { display: grid; grid-template-columns: 16px 1fr 30px; align-items: center; gap: 5px; min-width: 0; }

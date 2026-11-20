@@ -93,10 +93,6 @@ function modelsCard(rows) {
   const models = addModels({}, ...rows.map((r) => r.models)), all = tokenSum(models);
   if (!all) return "";
   const name = familyName(HEADLINE_MODEL);
-  const list = Object.entries(models).sort((a, b) => b[1] - a[1]).map(([f, n]) => `<div class="mix-row">
-    <span class="model ${f === HEADLINE_MODEL ? "lead" : "rest"}">${esc(familyName(f))}</span>
-    <div class="meter"><span class="share ${f === HEADLINE_MODEL ? "lead" : "rest"}" style="width:${Math.max(1, (100 * n) / all)}%"></span></div>
-    <span class="mval">${shareText(n, all)}</span><span class="mtok">${fmt.tokens(n)}</span></div>`).join("");
   modelsCard.per = dayList().map((day) => ({ day, models: addModels({}, ...rows.filter((r) => r.day === day).map((r) => r.models)) }));
   const shares = modelsCard.per.map((p) => (tokenSum(p.models) ? (p.models[HEADLINE_MODEL] || 0) / tokenSum(p.models) : 0));
   const top = Math.max(...shares);
@@ -109,7 +105,7 @@ function modelsCard(rows) {
     ? `<div class="mdays-head"><span>${name} share per day</span></div><div class="mdays"><i class="mtop">${shareText(axis, 1)}</i>${cols}</div>`
     : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
   return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2></div>
-    <div class="mix">${list}</div><p class="mnote mfoot">Sessions and subagents, cache reads left out</p>${perDay}</section>`;
+    ${modelMix(models)}<p class="mnote mfoot">Sessions and subagents, cache reads left out</p>${perDay}</section>`;
 }
 
 function projects(rows) {

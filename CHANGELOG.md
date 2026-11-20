@@ -3,7 +3,7 @@
 ## Unreleased
 
 - The activity page splits Claude's tokens by model family (Opus, Fable, Sonnet, Haiku) and shows
-  Fable's share for the range and per day. On the panel, hover the Claude limits for today's split.
+  Fable's share for the range and per day. On the panel, hover the limits to unfold today's split, same bars.
 - Cache reads are left out of the split: they are most of a long session's tokens, so with them
   the model a session started on drowns out the rest. Subagents count in the split, as they count
   against the plan; the other totals stay main sessions only.

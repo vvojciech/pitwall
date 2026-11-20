@@ -107,13 +107,16 @@ function miniMeter(label, w) {
     <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
-// Today's Claude tokens per model family, for the hover on the Claude row: kept out of the panel itself.
-function modelsTip(models) {
+// Claude's tokens per model family as bars, largest first: the activity page's card and the panel's hover.
+function modelMix(models) {
   const all = tokenSum(models);
   if (!all) return "";
-  const rows = Object.entries(models).sort((a, b) => b[1] - a[1])
-    .map(([f, n]) => `${familyName(f)}  ${shareText(n, all)} · ${fmt.tokens(n)}`);
-  return `Claude today, by model (no cache reads)\n${rows.join("\n")}`;
+  return `<div class="mix">${Object.entries(models).sort((a, b) => b[1] - a[1]).map(([f, n]) => {
+    const cls = f === HEADLINE_MODEL ? "lead" : "rest";
+    return `<div class="mix-row"><span class="model ${cls}">${esc(familyName(f))}</span>
+      <div class="meter"><span class="share ${cls}" style="width:${Math.max(1, (100 * n) / all)}%"></span></div>
+      <span class="mval">${shareText(n, all)}</span><span class="mtok">${fmt.tokens(n)}</span></div>`;
+  }).join("")}</div>`;
 }
 
 function usageBar() {
@@ -122,9 +125,10 @@ function usageBar() {
   const row = (agent, name) => {
     const l = u.limits[agent];
     const extra = creditsText(l);
-    const tip = agent === "claude" ? modelsTip(u.today.models) : "";
-    return `<div class="urow"${tip ? ` title="${esc(tip)}"` : ""}><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
-      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}`;
+    const mix = agent === "claude" ? modelMix(u.today.models) : "";
+    return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
+      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}${
+      mix ? `<div class="models-peek">${mix}<p class="mfoot">Claude today by model · subagents in, cache reads out</p></div>` : ""}`;
   };
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";

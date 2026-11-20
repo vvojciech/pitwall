@@ -25,6 +25,28 @@ const fmt = {
   },
 };
 
+// Claude's tokens per model family. The panel leads with this one; the others are listed beside it.
+const HEADLINE_MODEL = "fable";
+const familyName = (f) => f.charAt(0).toUpperCase() + f.slice(1);
+
+// Adds each {family: tokens} to `into`. An older service sends no split: nothing is added.
+function addModels(into, ...splits) {
+  splits.forEach((m) => Object.entries(m || {}).forEach(([f, n]) => { into[f] = (into[f] || 0) + n; }));
+  return into;
+}
+
+// A share that never rounds a little to 0% or a lot short of everything to 100%.
+function shareText(part, whole) {
+  if (!whole) return "–";
+  const p = (100 * part) / whole;
+  if (p === 0 || p === 100) return `${p}%`;
+  if (p < 0.1) return "<0.1%";
+  if (p > 99.9) return ">99.9%";
+  return p < 10 || p > 90 ? `${p.toFixed(1)}%` : `${Math.round(p)}%`;
+}
+
+const tokenSum = (models) => Object.values(models || {}).reduce((n, v) => n + v, 0);
+
 // How much of the limit's window has passed, in percent; null without a reset time.
 function passed(w) {
   if (!w.resets_at || !w.window) return null;
@@ -85,14 +107,28 @@ function miniMeter(label, w) {
     <span class="meter">${bars(used, time, level)}</span><b class="${level}">${used}%</b></span>`;
 }
 
+// Claude's tokens per model family as bars, largest first: the activity page's card and the panel's hover.
+function modelMix(models) {
+  const all = tokenSum(models);
+  if (!all) return "";
+  return `<div class="mix">${Object.entries(models).sort((a, b) => b[1] - a[1]).map(([f, n]) => {
+    const cls = f === HEADLINE_MODEL ? "lead" : "rest";
+    return `<div class="mix-row"><span class="model ${cls}">${esc(familyName(f))}</span>
+      <div class="meter"><span class="share ${cls}" style="width:${Math.max(1, (100 * n) / all)}%"></span></div>
+      <span class="mval">${shareText(n, all)}</span><span class="mtok">${fmt.tokens(n)}</span></div>`;
+  }).join("")}</div>`;
+}
+
 function usageBar() {
   const u = ui.usage;
   if (!u) return "";
   const row = (agent, name) => {
     const l = u.limits[agent];
     const extra = creditsText(l);
+    const mix = agent === "claude" ? modelMix(u.today.models) : "";
     return `<div class="urow"><span class="agent ${agent}">${name}</span>${miniMeter("5h", l && l.five_hour)}${miniMeter("wk", l && l.week)}</div>${
-      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}`;
+      extra ? `<div class="urow unote" title="${windowsText(l)}"><span></span><span class="tval">${extra}</span></div>` : ""}${
+      mix ? `<div class="models-peek">${mix}<p class="mfoot">Claude today by model · subagents in, cache reads out</p></div>` : ""}`;
   };
   const t = u.today;
   const today = t.active || t.prompts ? `${fmt.duration(t.active)} · ${fmt.count(t.prompts)} prompts` : "No activity yet";

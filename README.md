@@ -68,7 +68,7 @@ Pitwall puts all of them in one panel next to your terminal, and tells you which
 
 **Code map.** Files read and edited, and the files that import an edit, with a warning when no test covers it.
 
-**Plan limits** for Claude and Codex, and an activity page with time, prompts and tokens per day.
+**Plan limits** for Claude and Codex, and an activity page with time, prompts and tokens per day, and Claude tokens per model with Fable's share (cache reads left out, subagents included).
 
 </td>
 <td width="42%"><img src="docs/images/map.png" alt="The code map: the edited files cart.ts, CartSummary.tsx and route.ts, the files that import them, and a warning that two edits have no test that imports them"></td>

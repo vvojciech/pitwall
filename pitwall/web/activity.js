@@ -1,5 +1,5 @@
 "use strict";
-// The activity page: totals, agent time per day (stacked by agent), plan limits, projects.
+// The activity page: totals, agent time per day (stacked by agent), plan limits, Claude models, projects.
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 const AGENTS = [["claude", "Claude"], ["codex", "Codex"]];  // fixed order: stack order and legend order
@@ -87,9 +87,32 @@ function limitsCard() {
     <div class="usage-card wide">${shown().map(([a]) => limitsBlock(a, l[a])).join("")}</div></section>`;
 }
 
+// Claude's tokens per model family over the range, then the headline model's share per day.
+function modelsCard(rows) {
+  const models = addModels({}, ...rows.map((r) => r.models)), all = tokenSum(models);
+  if (!all) return "";
+  const name = familyName(HEADLINE_MODEL);
+  modelsCard.per = dayList().map((day) => ({ day, models: addModels({}, ...rows.filter((r) => r.day === day).map((r) => r.models)) }));
+  const shares = modelsCard.per.map((p) => (tokenSum(p.models) ? (p.models[HEADLINE_MODEL] || 0) / tokenSum(p.models) : 0));
+  const top = Math.max(...shares);
+  const axis = [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1].find((t) => t >= top);  // a round top, so bar heights compare
+  const label = (day, i) => days <= 7 ? new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "short" })
+    : days <= 14 || (shares.length - 1 - i) % 5 === 0 ? String(Number(day.slice(8))) : "";
+  const cols = shares.map((v, i) => `<div class="mday" data-i="${i}"><span class="lead" style="height:${
+    v ? Math.max(2, (100 * v) / axis) : 0}%">${v && (days <= 7 || v === top) ? `<b>${shareText(v, 1)}</b>` : ""}</span><em>${label(modelsCard.per[i].day, i)}</em></div>`).join("");
+  const perDay = top
+    ? `<div class="mdays-head"><span>${name} share per day</span></div><div class="mdays"><i class="mtop">${shareText(axis, 1)}</i>${cols}</div>`
+    : `<p class="mnone">No ${name} in the last ${days} days.</p>`;
+  return `<section class="panel-card"><div class="card-head"><h2>Claude models</h2></div>
+    ${modelMix(models)}<p class="mnote mfoot">Sessions and subagents, cache reads left out</p>${perDay}</section>`;
+}
+
+// A subagent row carries only its model split; it never makes a project or a range count as active.
+const counted = (r) => r.active || r.prompts || r.files || r.commands || r.tokens;
+
 function projects(rows) {
   const by = {};
-  rows.forEach((r) => {
+  rows.filter(counted).forEach((r) => {
     const p = by[r.project] ||= { project: r.project, active: 0, claude: 0, codex: 0, prompts: 0, files: 0, commands: 0, tokens: 0 };
     ["active", "prompts", "files", "commands", "tokens"].forEach((k) => { p[k] += r[k]; });
     p[r.agent] += r.active;
@@ -106,20 +129,34 @@ function projects(rows) {
 
 function render() {
   const rows = data.rows;
-  page.innerHTML = rows.length
-    ? tiles(rows) + `<div class="two"><section class="panel-card chart-box"></section>${limitsCard()}</div>` + projects(rows)
+  page.innerHTML = rows.some(counted)
+    ? tiles(rows) + `<div class="two"><section class="panel-card chart-box"></section><div class="side">${limitsCard()}${modelsCard(rows)}</div></div>` + projects(rows)
     : `<div class="empty-state"><strong>No agent activity</strong>Nothing in the last ${days} days.</div>` + limitsCard();
   const box = document.querySelector(".chart-box");
   if (box) box.innerHTML = chart(rows);  // drawn after layout, at the card's real width
 }
 
+const longDate = (day) => new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+
+// A day's Claude tokens per model family, the headline model first.
+function modelTip(p) {
+  const all = tokenSum(p.models);
+  if (!all) return `<b>${longDate(p.day)}</b><span>No Claude tokens</span>`;
+  const list = Object.entries(addModels({ [HEADLINE_MODEL]: 0 }, p.models)).sort((a, b) => (b[0] === HEADLINE_MODEL) - (a[0] === HEADLINE_MODEL) || b[1] - a[1]);
+  return `<b>${longDate(p.day)}</b>${list.map(([f, n]) => `<span><i class="model-dot ${f === HEADLINE_MODEL ? "lead" : "rest"}"></i>${esc(familyName(f))}<em>${shareText(n, all)} · ${fmt.tokens(n)}</em></span>`).join("")}
+    <span class="sum">Total<em>${fmt.tokens(all)}</em></span>`;
+}
+
 page.addEventListener("mousemove", (e) => {
-  const hit = e.target.closest(".hit");
+  const hit = e.target.closest(".hit, .mday");
   if (!hit) { tip.classList.remove("show"); return; }
-  const p = chart.per[Number(hit.dataset.i)];
-  const date = new Date(p.day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
-  tip.innerHTML = `<b>${date}</b>${shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
+  if (hit.classList.contains("mday")) {
+    tip.innerHTML = modelTip(modelsCard.per[Number(hit.dataset.i)]);
+  } else {
+    const p = chart.per[Number(hit.dataset.i)];
+    tip.innerHTML = `<b>${longDate(p.day)}</b>${shown().map(([a, n]) => `<span><i class="s-${a}"></i>${n}<em>${fmt.duration(p[a] * 3600)}</em></span>`).join("")}
     <span class="sum">Total<em>${fmt.duration(p.total * 3600)}</em></span>`;
+  }
   tip.style.left = `${Math.min(e.clientX + 14, innerWidth - 190)}px`;
   tip.style.top = `${e.clientY + 14}px`;
   tip.classList.add("show");

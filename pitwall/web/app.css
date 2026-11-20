@@ -4,6 +4,7 @@
   --green: #2b8450; --red: #bf3b34; --red-bg: #fdebe9; --blue: #3567d4; --time: #c2bcae;
   /* Agent identity colours, also the chart series. Validated with the dataviz palette check. */
   --claude: #c96442; --codex: #3567d4; --term-bg: #1b1a17; --term-ink: #d8d5cc;
+  --lead-model: #c2399b;  /* the headline model (Fable); validated against both agent colours */
   --radius: 10px; --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   color-scheme: light;
 }
@@ -13,6 +14,7 @@
     --amber: #f2a93b; --amber-bg: rgba(242, 169, 59, .1); --amber-line: rgba(242, 169, 59, .45);
     --green: #5dc58b; --red: #f06c61; --red-bg: rgba(240, 108, 97, .1); --blue: #7aa2ff; --time: #4a463f;
     --claude: #d4734f; --codex: #638cec; --term-bg: #0e0d0c; --term-ink: #d8d5cc;
+    --lead-model: #cc5aab;
     color-scheme: dark;
   }
 }
@@ -234,6 +236,27 @@ main { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap:
 .today span { display: block; color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
 .agent.codex::before { background: var(--codex); }
 
+/* Claude models: the headline model in its colour, the rest in grey */
+.model { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); font-size: 11px; }
+.model::before { content: ""; }
+.model::before, .model-dot { width: 6px; height: 6px; border-radius: 2px; background: var(--faint); display: inline-block; }
+.model.lead::before, .model-dot.lead, .share.lead, .mday .lead { background: var(--lead-model); }
+.side { display: grid; gap: 16px; min-width: 0; }
+.mix { display: grid; gap: 7px; }
+.mix-row { display: grid; grid-template-columns: 62px 1fr 46px 42px; align-items: center; column-gap: 8px; font-size: 11px; }
+.mix-row .meter span { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: var(--faint); }
+.mix-row .meter, .mix-row .mval { grid-area: auto; }
+.mtok { color: var(--faint); font: 10.5px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.mfoot { margin-top: 8px; color: var(--faint); font-size: 10.5px; }
+.mdays-head { margin-top: 14px; color: var(--muted); font-size: 11px; }
+.mdays { position: relative; display: flex; align-items: stretch; gap: 2px; height: 76px; margin: 16px 0 18px 30px; border-bottom: 1px solid var(--line); border-top: 1px dashed var(--line); }
+.mtop { position: absolute; left: -30px; top: -7px; font: normal 10px var(--mono); color: var(--faint); }
+.mday { flex: 1; position: relative; display: flex; align-items: flex-end; justify-content: center; }
+.mday b { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 2px; font: 500 10px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mday:hover { background: var(--line); }
+.mday span { position: relative; width: min(100%, 22px); border-radius: 3px 3px 0 0; }
+.mday em { position: absolute; bottom: -16px; font-style: normal; color: var(--faint); font-size: 10px; }
+
 /* Activity page */
 body.activity-page { font-size: 13px; }
 .activity-page .bar { padding: 12px 20px; }
@@ -328,6 +351,11 @@ tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 /* Usage strip, pinned to the bottom of the panel */
 .usage-bar { position: sticky; bottom: 0; z-index: 2; background: var(--bg); border-top: 1px solid var(--line); padding: 7px 12px 8px; display: grid; gap: 4px; font-size: 11px; }
 .usage-bar:empty { display: none; }
+/* Hover or focus the limits to unfold today's Claude model split, the same bars as the activity page */
+.models-peek { display: grid; gap: 6px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height .18s ease, opacity .15s ease, margin .18s ease; }
+.usage-bar:hover .models-peek, .usage-bar:focus-within .models-peek { max-height: 160px; opacity: 1; margin: 6px 0 4px; }
+.models-peek .mfoot { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .models-peek { transition: none; } }
 .urow { display: grid; grid-template-columns: 52px 1fr 1fr; align-items: center; gap: 10px; min-width: 0; }
 .urow .agent { color: var(--ink); font-size: 11px; }
 .mm { display: grid; grid-template-columns: 16px 1fr 30px; align-items: center; gap: 5px; min-width: 0; }

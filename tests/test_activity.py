@@ -13,8 +13,8 @@ def rec(ts, **kw):
     return json.dumps(dict({"timestamp": f"2026-10-10T{ts}Z", "cwd": "/w/shop/.claude/worktrees/feat"}, **kw))
 
 
-def assistant(ts, msg_id, blocks, out=10, sidechain=False):
-    return rec(ts, type="assistant", isSidechain=sidechain, message={"id": msg_id, "content": blocks, "usage": {
+def assistant(ts, msg_id, blocks, out=10, sidechain=False, model="claude-opus-5-5"):
+    return rec(ts, type="assistant", isSidechain=sidechain, message={"id": msg_id, "model": model, "content": blocks, "usage": {
         "input_tokens": 1, "cache_creation_input_tokens": 100, "cache_read_input_tokens": 1000, "output_tokens": out}})
 
 
@@ -27,7 +27,7 @@ CLAUDE = [
                                   {"type": "tool_use", "name": "Write", "input": {"file_path": "/w/shop/a.ts"}}]),
     rec("08:03:00", type="user", isMeta=True, message={"content": "<local-command-stdout>x"}),
     rec("09:00:00", type="user", message={"content": [{"type": "text", "text": "Next"}, {"type": "image"}]}),
-    assistant("09:00:20", "m3", [{"type": "text", "text": "Done"}]),
+    assistant("09:00:20", "m3", [{"type": "text", "text": "Done"}], model="claude-fable-5-1"),
     "not json",
 ]
 
@@ -56,11 +56,29 @@ class ActivityTests(unittest.TestCase):
         self.assertEqual(row["files"], 1)
         self.assertEqual(row["tokens"], 3 * 1111)  # m1 once, m2, m3
         self.assertEqual(row["active"], 180 + 20)  # 08:00-08:03, then 09:00-09:00:20; the hour gap is idle
+        self.assertEqual(row["models"], {"opus": 2 * 111, "fable": 111})  # cache reads left out
+
+    def test_claude_tokens_by_model_family(self):
+        lines = [assistant("08:00:00", "a", [], model="claude-haiku-5-5"),
+                 assistant("08:00:10", "b", [], model="claude-3-5-sonnet-20241022"),
+                 assistant("08:00:20", "c", [], model="us.anthropic.claude-fable-5-1"),
+                 assistant("08:00:30", "d", [], model=None),
+                 rec("08:00:40", type="assistant", message={"id": "e", "model": "<synthetic>", "content": [],
+                                                            "usage": {"input_tokens": 0, "output_tokens": 0}})]
+        (row,) = summarize(lines, "claude")
+        self.assertEqual(row["models"], {"haiku": 111, "sonnet": 111, "fable": 111, "other": 111})
+
+    def test_a_reply_read_only_from_the_cache_adds_no_model_tokens(self):
+        line = rec("08:00:00", type="assistant", message={"id": "a", "model": "claude-opus-5-5", "content": [],
+                                                          "usage": {"cache_read_input_tokens": 5000}})
+        (row,) = summarize([line], "claude")
+        self.assertEqual((row["tokens"], row["models"]), (5000, {}))
 
     def test_codex_day(self):
         (row,) = summarize(CODEX, "codex")
         self.assertEqual((row["project"], row["prompts"], row["files"], row["tokens"]), ("api", 1, 1, 8000))
         self.assertEqual(row["active"], 120)
+        self.assertEqual(row["models"], {})  # Codex token counts name no model
 
     def test_codex_limits(self):
         limits = codex_limits(CODEX)

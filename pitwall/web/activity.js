@@ -39,7 +39,6 @@ function tiles(rows) {
     ${tile("Tokens", fmt.tokens(sum(rows, "tokens")), "cache reads included")}</section>`;
 }
 
-// The headline model's share of Claude's tokens in the range; no tile without a model split.
 function chart(rows) {
   const list = dayList();
   const per = list.map((day) => {
@@ -108,9 +107,12 @@ function modelsCard(rows) {
     ${modelMix(models)}<p class="mnote mfoot">Sessions and subagents, cache reads left out</p>${perDay}</section>`;
 }
 
+// A subagent row carries only its model split; it never makes a project or a range count as active.
+const counted = (r) => r.active || r.prompts || r.files || r.commands || r.tokens;
+
 function projects(rows) {
   const by = {};
-  rows.forEach((r) => {
+  rows.filter(counted).forEach((r) => {
     const p = by[r.project] ||= { project: r.project, active: 0, claude: 0, codex: 0, prompts: 0, files: 0, commands: 0, tokens: 0 };
     ["active", "prompts", "files", "commands", "tokens"].forEach((k) => { p[k] += r[k]; });
     p[r.agent] += r.active;
@@ -127,7 +129,7 @@ function projects(rows) {
 
 function render() {
   const rows = data.rows;
-  page.innerHTML = rows.length
+  page.innerHTML = rows.some(counted)
     ? tiles(rows) + `<div class="two"><section class="panel-card chart-box"></section><div class="side">${limitsCard()}${modelsCard(rows)}</div></div>` + projects(rows)
     : `<div class="empty-state"><strong>No agent activity</strong>Nothing in the last ${days} days.</div>` + limitsCard();
   const box = document.querySelector(".chart-box");
